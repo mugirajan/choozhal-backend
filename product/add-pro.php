@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $price = $data['price'];
   $image = $data['image'];
   $serial_number = $data['serial_number'];
-  $category_id = $data['categoryId'];
+  $category_id = $data['category_id'];
 
   $query = "INSERT INTO product (name, description, price, image, serial_number, category_id) 
              VALUES ('$name', '$description', '$price', '$image', '$serial_number', '$category_id')";

@@ -31,7 +31,7 @@ if ($data && isset($data['email']) && isset($data['password'])) {
     $query = "SELECT * FROM admintable WHERE email = '$email' AND password = '$password'";
     $result = $conn->query($query);
     $query = "SELECT * FROM admintable WHERE email = '$email' AND password = '$password'";
-$result = $conn->query($query);
+    $result = $conn->query($query);
 
 
     // Check if user exists

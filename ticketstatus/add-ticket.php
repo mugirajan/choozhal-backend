@@ -7,17 +7,17 @@ header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 $sql = "SELECT 
-            tickets.ticket_id, 
-            tickets.message, 
-            tickets.status, 
-            tickets.last_updated,
-            users.uname AS user_name, 
-            users.email AS user_email, 
-            users.phone AS user_phone
-        FROM 
-            tickets
-        JOIN 
-            users ON tickets.user_id = users.id";
+  t.ticket_id, 
+  t.message, 
+  t.status, 
+  t.last_updated,
+  u.uname AS user_name, 
+  u.email AS user_email, 
+  u.phone AS user_phone
+FROM 
+  tickets t
+JOIN 
+  users u ON t.user_id = u.id";
 
 $result = $conn->query($sql);
 
