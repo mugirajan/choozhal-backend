@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       echo json_encode(['error' => 'Failed to add purchase record']);
     }
   } else {
-    echo json_encode(['error' => 'Registration failed']);
+    echo json_encode(['error' => 'Registration failed'.$query]);
   }
 } else {
   echo json_encode(['error' => 'Invalid request method']);

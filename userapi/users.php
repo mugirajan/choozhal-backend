@@ -20,7 +20,12 @@ if (isset($_GET['admin_id'])) {
         $filterQuery = '';
         if ($adminRole == 'SuperAdmin') {
             $filterQuery = '';
-        } elseif ($adminRole == 'RegionAdmin') {
+        } 
+        elseif ($adminRole == 'HeadOfiice') {
+            $filterQuery = '';
+        }elseif ($adminRole == 'GeneralManager') {
+            $filterQuery = '';
+        }elseif ($adminRole == 'RegionAdmin') {
             $filterQuery = "WHERE sales_person_id = '$adminId'";
         } elseif ($adminRole == 'AreaAdmin') {
             $filterQuery = "WHERE sales_person_id = '$adminId'";
