@@ -21,36 +21,33 @@ if ($conn->connect_error) {
 $rawData = file_get_contents('php://input');
 $data = json_decode($rawData, true);
 
-if ($data && isset($data['email']) && isset($data['password'])) {
-    $email = $data['email'];
-    $password = $data['password'];
+if ($data && isset($data['admin_id'])) {
+    $adminId = $data['admin_id'];
 
-    // Query database for user credentials
-    $query = "SELECT * FROM admintable WHERE email = '$email' AND password = '$password'";
+    // Query database for admin details
+    $query = "SELECT * FROM admintable WHERE id = '$adminId'";
     $result = $conn->query($query);
 
-    // Check if user exists
     if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
         $response = array(
             'success' => true,
-            'admin_id' => $row['id'],
-            'role' => $row['role'], 
-            'branch' => $row['branch'], 
-            'area' => $row['area'], 
-            'region' => $row['region'], 
-            'name' => $row['name']
+            'data' => array(
+                'id' => $row['id'],
+                'name' => $row['name'],
+                'email' => $row['email'],
+                'role' => $row['role'],
+                'branch' => $row['branch'],
+                'area' => $row['area'],
+                'region' => $row['region']
+            )
         );
         echo json_encode($response);
     } else {
-        $response = array(
-            'success' => false,
-            'message' => 'Invalid email or password.'
-        );
-        echo json_encode($response);
+        echo json_encode(array('success' => false, 'message' => 'Admin not found.'));
     }
 } else {
-    echo json_encode(array('success' => false, 'message' => 'Email and password are required'));
+    echo json_encode(array('success' => false, 'message' => 'Admin ID is required.'));
 }
 
 $conn->close();

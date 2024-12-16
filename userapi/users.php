@@ -1,43 +1,81 @@
 <?php
-
-// Include the database connection file
 require_once '../db.php';
 
-// Check if the admin_id is passed in the request
 if (isset($_GET['admin_id'])) {
     $adminId = $_GET['admin_id'];
 
-    // Query the admintable to check if the admin_id exists and to get the admin's role
     $query = "SELECT * FROM admintable WHERE id = '$adminId'";
     $result = $conn->query($query);
 
-    // Check if the admin_id exists
     if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
         $adminRole = $row['role'];
+        $adminArea = $row['area']; 
 
-        // Apply filters based on the admin's role
         $filterQuery = '';
+
         if ($adminRole == 'SuperAdmin') {
             $filterQuery = '';
-        } 
-        elseif ($adminRole == 'HeadOfiice') {
+        } elseif ($adminRole == 'HeadOffice') {
             $filterQuery = '';
-        }elseif ($adminRole == 'GeneralManager') {
+        } elseif ($adminRole == 'GeneralManager') {
             $filterQuery = '';
-        }elseif ($adminRole == 'RegionAdmin') {
-            $filterQuery = "WHERE sales_person_id = '$adminId'";
-        } elseif ($adminRole == 'AreaAdmin') {
-            $filterQuery = "WHERE sales_person_id = '$adminId'";
+        } elseif ($adminRole == 'RegionAdmin') {
+            $branchAdminsQuery = "SELECT id FROM admintable WHERE area = '$adminArea' AND role = 'BranchAdmin'";
+            error_log("BranchAdmins query: $branchAdminsQuery");
+            $branchAdminsResult = $conn->query($branchAdminsQuery);
+
+            $branchAdminIds = [];
+            if ($branchAdminsResult && $branchAdminsResult->num_rows > 0) {
+                while ($branchAdmin = $branchAdminsResult->fetch_assoc()) {
+                    $branchAdminIds[] = $branchAdmin['id'];
+                }
+            }
+            error_log("BranchAdmin IDs: " . json_encode($branchAdminIds));
+
+            $salesPersonsQuery = "SELECT id FROM admintable WHERE branch IN (SELECT branch FROM admintable WHERE area = '$adminArea' AND role = 'BranchAdmin') AND role = 'SalesPerson'";
+            error_log("SalesPersons query: $salesPersonsQuery");
+            $salesPersonsResult = $conn->query($salesPersonsQuery);
+
+            $salesPersonIds = [];
+            if ($salesPersonsResult && $salesPersonsResult->num_rows > 0) {
+                while ($salesPerson = $salesPersonsResult->fetch_assoc()) {
+                    $salesPersonIds[] = $salesPerson['id'];
+                }
+            }
+            error_log("SalesPerson IDs: " . json_encode($salesPersonIds));
+
+            $allIds = array_merge($branchAdminIds, $salesPersonIds);
+            $allIdsString = implode(',', array_map('intval', $allIds));
+
+            if (!empty($allIdsString)) {
+                $filterQuery = "WHERE sales_person_id IN ($allIdsString)";
+            } else {
+                error_log("No valid BranchAdmin or SalesPerson IDs found for RegionAdmin area: $adminArea");
+                $filterQuery = "WHERE 1=0"; 
+            }
+        } elseif ($adminRole == 'BranchAdmin') {
+            $adminBranch = $row['branch']; 
+            $filterQuery = "WHERE sales_person_id IN (SELECT id FROM admintable WHERE branch = '$adminBranch')";
         } elseif ($adminRole == 'SalesPerson') {
             $filterQuery = "WHERE sales_person_id = '$adminId'";
         }
 
-        // Query the users table with the applied filters
-        $query = "SELECT * FROM users $filterQuery";
+        // Updated query with product table join
+        $query = "SELECT 
+                    users.*, 
+                    product.image AS product_image 
+                  FROM 
+                    users 
+                  LEFT JOIN 
+                    product 
+                  ON 
+                    users.pro_id = product.id 
+                  $filterQuery";
+
+        error_log("Final users query: $query");
         $result = $conn->query($query);
 
-        // Check if any users exist with the applied filters
         if ($result && $result->num_rows > 0) {
             $users = array();
             while ($row = $result->fetch_assoc()) {

@@ -9,36 +9,74 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization");
 if (isset($_GET['admin_id'])) {
     $adminId = $_GET['admin_id'];
 
-    // Query the admintable to check if the admin_id exists and to get the admin's role
-    $query = "SELECT * FROM admintable WHERE id = '$adminId'";
-    $result = $conn->query($query);
+    // Query to get the admin details
+    $adminQuery = "SELECT * FROM admintable WHERE id = '$adminId'";
+    $adminResult = $conn->query($adminQuery);
 
-    // Check if the admin_id exists
-    if ($result && $result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $adminRole = $row['role'];
+    if ($adminResult && $adminResult->num_rows > 0) {
+        $adminRow = $adminResult->fetch_assoc();
+        $adminRole = $adminRow['role'];
+        $adminRegion = $adminRow['region'];
+        $adminBranch = $adminRow['branch'];
 
-        // Apply filters based on the admin's role
         $filterQuery = '';
+
         if ($adminRole == 'SuperAdmin') {
             $filterQuery = '';
+        } elseif ($adminRole == 'HeadOffice') {
+            $filterQuery = '';
+        } elseif ($adminRole == 'GeneralManager') {
+            $filterQuery = '';
         } elseif ($adminRole == 'RegionAdmin') {
-            $filterQuery = "WHERE u.sales_person_id= '$adminId'";
-        } elseif ($adminRole == 'AreaAdmin') {
-            $filterQuery = "WHERE u.sales_person_id = '$adminId'";
+            $branchAdminsQuery = "SELECT id FROM admintable WHERE region = '$adminRegion' AND role = 'BranchAdmin'";
+            $branchAdminsResult = $conn->query($branchAdminsQuery);
+
+            $branchAdminIds = [];
+            if ($branchAdminsResult && $branchAdminsResult->num_rows > 0) {
+                while ($branchAdmin = $branchAdminsResult->fetch_assoc()) {
+                    $branchAdminIds[] = $branchAdmin['id'];
+                }
+            }
+
+            $salesPersonsQuery = "SELECT id FROM admintable WHERE branch IN (
+                                        SELECT branch FROM admintable WHERE id IN (" . implode(',', $branchAdminIds) . ") AND role = 'BranchAdmin'
+                                    ) AND role = 'SalesPerson'";
+            $salesPersonsResult = $conn->query($salesPersonsQuery);
+
+            $salesPersonIds = [];
+            if ($salesPersonsResult && $salesPersonsResult->num_rows > 0) {
+                while ($salesPerson = $salesPersonsResult->fetch_assoc()) {
+                    $salesPersonIds[] = $salesPerson['id'];
+                }
+            }
+
+            $allIds = array_merge($branchAdminIds, $salesPersonIds);
+            $allIdsString = implode(',', array_map('intval', $allIds));
+
+            if (!empty($allIdsString)) {
+                $filterQuery = "WHERE u.sales_person_id IN ($allIdsString)";
+            } else {
+                $filterQuery = "WHERE 1=0"; 
+            }
+        } elseif ($adminRole == 'BranchAdmin') {
+            $filterQuery = "WHERE u.sales_person_id IN (
+                                SELECT id FROM admintable WHERE branch = (
+                                    SELECT branch FROM admintable WHERE id = '$adminId'
+                                )
+                            )";
         } elseif ($adminRole == 'SalesPerson') {
             $filterQuery = "WHERE u.sales_person_id = '$adminId'";
         }
 
-        // Query the tickets table with the applied filters
-        $query = "SELECT t.*, u.uname, u.email,u.sales_person,u.sales_person_id,u.pro_name 
-                   FROM tickets t 
-                   INNER JOIN users u ON t.user_id = u.id $filterQuery";
+        $query = "SELECT t.*, u.uname,u.phone, u.email, u.sales_person, u.sales_person_id, u.pro_name 
+                  FROM tickets t 
+                  INNER JOIN users u ON t.user_id = u.id 
+                  $filterQuery";
+
         $result = $conn->query($query);
 
-        // Check if any tickets exist with the applied filters
+        $tickets = [];
         if ($result && $result->num_rows > 0) {
-            $tickets = array();
             while ($row = $result->fetch_assoc()) {
                 $tickets[] = $row;
             }
