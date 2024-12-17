@@ -21,25 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $city = $data['city'];
   $address = $data['address'];
 
-  // Insert into users table
   $query = "INSERT INTO users (uname, phone, email, pro_name, pro_id, sales_person, sales_person_id, area, state, district, city, address) VALUES ('$uname', '$phone', '$email', '$pro_name', '$pro_id', '$sales_person','$sales_person_id', '$area', '$state', '$district', '$city', '$address')";
 
   if (mysqli_query($conn, $query)) {
-    $user_id = mysqli_insert_id($conn); 
-
-    // Insert into purchase_records table
-    $query = "INSERT INTO purchase_records (user_id, product_id, quantity, purchase_date, sales_person_id) VALUES ('$user_id', '$pro_id', '1', NOW(),'$sales_person_id')";
-
-    if (mysqli_query($conn, $query)) {
-      echo json_encode(['message' => 'User registered and purchase record added successfully']);
-    } else {
-      echo json_encode(['error' => 'Failed to add purchase record']);
-    }
+    echo json_encode(['message' => 'User registered successfully']);
   } else {
     echo json_encode(['error' => 'Registration failed'.$query]);
   }
 } else {
   echo json_encode(['error' => 'Invalid request method']);
 }
-
 ?>
