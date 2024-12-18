@@ -21,15 +21,14 @@ $data = json_decode(file_get_contents("php://input"), true);
 
 // Check if ID is provided (mandatory for updates)
 if (isset($data['id']) && is_numeric($data['id'])) {
-    $id = intval($data['id']); // Sanitize the ID to ensure it's an integer
+    $id = intval($data['id']); 
 
-    // List of all possible columns in the users table
+    // List of all possible columns in the sale_records table
     $columns = [
-        'uname', 'phone', 'email', 'pro_name', 'sales_person', 'area', 'state', 'district', 'city', 'address',
-        'created_at', 'pro_id', 'category_id', 'sales_person_id', 'modified_date', 'deleted_date', 'is_deleted'
+         'pro_id', 'user_id', 'admin_id', 'serial_num',   
+        'created_at','updated_at', 'created_by', 'is_deleted'
     ];
 
-    // Prepare the update query dynamically
     $updateFields = [];
     $updateValues = [];
 
@@ -51,7 +50,7 @@ if (isset($data['id']) && is_numeric($data['id'])) {
     $updateValues[] = $id;
 
     // Prepare the SQL query
-    $query = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE id = ?";
+    $query = "UPDATE sale_records SET " . implode(', ', $updateFields) . " WHERE id = ?";
 
     // Prepare the statement and bind the parameters
     if ($stmt = $conn->prepare($query)) {
@@ -68,7 +67,7 @@ if (isset($data['id']) && is_numeric($data['id'])) {
         // Execute the query
         if ($stmt->execute()) {
             http_response_code(200);
-            echo json_encode(["message" => "User record updated successfully!"]);
+            echo json_encode(["message" => "sale records record updated successfully!"]);
         } else {
             // Log the error if the query fails
             error_log("Error executing query: " . $stmt->error);

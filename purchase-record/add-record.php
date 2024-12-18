@@ -10,10 +10,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   $pro_id = $data['pro_id'];
   $user_id = $data['user_id'];
-  $s_num = $data['snum'];
+  $serial_num = $data['serial_num'];
   $admin_id = $data['admin_id'];
 
-  $query = "INSERT INTO sale_records (pro_id, user_id, serial_num, admin_id, created_by) VALUES ('$pro_id', '$user_id', '$s_num', '$admin_id', '$admin_id')";
+  $query = "INSERT INTO sale_records (pro_id, user_id, serial_num, admin_id, created_by) VALUES ('$pro_id', '$user_id', '$serial_num', '$admin_id', '$admin_id')";
 
   if (mysqli_query($conn, $query)) {
     echo json_encode(['message' => 'User registered successfully']);
