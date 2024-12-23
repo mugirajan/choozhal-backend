@@ -1,7 +1,6 @@
 <?php
 require_once '../db.php';
 
-// Handle CORS preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE');
@@ -10,23 +9,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Set headers for other requests
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Get the incoming request data
 $data = json_decode(file_get_contents("php://input"), true);
 
-// Check if ID is provided (mandatory for updates)
 if (isset($data['id']) && is_numeric($data['id'])) {
     $id = intval($data['id']); 
 
-    // List of all possible columns in the sale_records table
     $columns = [
-         'pro_id', 'user_id', 'admin_id', 'serial_num',   
-        'created_at','updated_at', 'created_by', 'is_deleted'
+         'cust_id', 'prod_id', 'prod_uniq_no', 'bill_no',   
+        'warnt_period','prof_doc', 'sale_note'
     ];
 
     $updateFields = [];
@@ -39,18 +34,16 @@ if (isset($data['id']) && is_numeric($data['id'])) {
         }
     }
 
-    // If there are no fields to update, send an error response
     if (empty($updateFields)) {
         http_response_code(400);
         echo json_encode(["message" => "No valid fields provided for update."]);
         exit();
     }
 
-    // Add the ID to the end of the values for the WHERE clause
     $updateValues[] = $id;
 
     // Prepare the SQL query
-    $query = "UPDATE sale_records SET " . implode(', ', $updateFields) . " WHERE id = ?";
+    $query = "UPDATE sales_records SET " . implode(', ', $updateFields) . " WHERE id = ?";
 
     // Prepare the statement and bind the parameters
     if ($stmt = $conn->prepare($query)) {

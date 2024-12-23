@@ -63,19 +63,19 @@ if (isset($_GET['admin_id'])) {
 
         // Updated query with product table join
         $query = "SELECT 
-            sale_records.*, 
-            users.uname AS user_name, 
-            product.name AS product_name 
+            sales_records.*, 
+            customers.first_name AS user_name, 
+            products.p_name AS product_name 
           FROM 
-            sale_records 
+            sales_records 
           LEFT JOIN 
-            users 
+            customers 
           ON 
-            sale_records.user_id = users.id 
+            sales_records.cust_id = customers.id 
           LEFT JOIN 
-            product 
+            products 
           ON 
-            sale_records.pro_id = product.id 
+            sales_records.prod_id = products.id 
           $filterQuery";
 
 

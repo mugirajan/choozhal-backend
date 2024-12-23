@@ -68,10 +68,20 @@ if (isset($_GET['admin_id'])) {
             $filterQuery = "WHERE u.sales_person_id = '$adminId'";
         }
 
-        $query = "SELECT t.*, u.uname,u.phone, u.email, u.sales_person, u.sales_person_id, u.pro_name 
-                  FROM tickets t 
-                  INNER JOIN users u ON t.user_id = u.id 
-                  $filterQuery";
+        $query = "SELECT ticket_details.*,
+                    customers.first_name AS user_name, 
+                    products.p_name AS product_name
+                    FROM 
+                        ticket_details 
+                    LEFT JOIN 
+                        customers 
+                    ON 
+                        ticket_details.cust_id = customers.id 
+                    LEFT JOIN 
+                        products 
+                    ON 
+                        ticket_details.sales_id = sales_records.id 
+                        $filterQuery";
 
         $result = $conn->query($query);
 

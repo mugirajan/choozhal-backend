@@ -1,7 +1,6 @@
 <?php
 require_once '../db.php';
 
-// Handle CORS preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE');
@@ -10,23 +9,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Set headers for other requests
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Get the incoming request data
 $data = json_decode(file_get_contents("php://input"), true);
 
-// Check if ID is provided (mandatory for updates)
 if (isset($data['id']) && is_numeric($data['id'])) {
-    $id = intval($data['id']); // Sanitize the ID to ensure it's an integer
+    $id = intval($data['id']);
 
-    // List of all possible columns in the users table
+    
     $columns = [
-        'uname', 'phone', 'email', 'pro_name', 'sales_person', 'area', 'state', 'district', 'city', 'address',
-        'created_at', 'pro_id', 'category_id', 'sales_person_id', 'modified_date', 'deleted_date', 'is_deleted'
+        'first_name', 'last_name', 'email', 'mobile_no', 'dob', 'gender', 'address', 'area', 'city', 'district', 'state', 'pincode', 'profile_pic'
     ];
 
     // Prepare the update query dynamically
@@ -51,7 +46,7 @@ if (isset($data['id']) && is_numeric($data['id'])) {
     $updateValues[] = $id;
 
     // Prepare the SQL query
-    $query = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE id = ?";
+    $query = "UPDATE customers SET " . implode(', ', $updateFields) . " WHERE id = ?";
 
     // Prepare the statement and bind the parameters
     if ($stmt = $conn->prepare($query)) {

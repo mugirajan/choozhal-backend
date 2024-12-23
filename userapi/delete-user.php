@@ -11,7 +11,7 @@ $data = json_decode(file_get_contents('php://input'), true);
 if (!empty($data['id'])) {
     $id = $data['id'];
 
-    $sql = "DELETE FROM users WHERE id = ?";
+    $sql = "DELETE FROM customers WHERE id = ?";
     if ($stmt = $conn->prepare($sql)) {
         $stmt->bind_param("i", $id);
         
