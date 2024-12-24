@@ -17,4 +17,11 @@ if (!$conn) {
   die('Connection failed: ' . mysqli_connect_error());
 }
 
-?>
+
+try {
+  $dsn = "mysql:host=$dbHost;port=$dbPort;dbname=$dbName";
+  $pdo = new PDO($dsn, $dbUsername, $dbPassword);
+  $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+  error_log("Connection failed: " . $e->getMessage());
+}
