@@ -25,6 +25,9 @@ if ($data && isset($data['email']) && isset($data['password'])) {
             'success' => true,
             'admin_id' => $row['id'],
             'role' => $row['role'], 
+            'branch' => $row['branch'], 
+            'area' => $row['area'], 
+            'region' => $row['region'], 
             'name' => $row['name']
         );
         echo json_encode($response);

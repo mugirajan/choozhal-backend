@@ -6,9 +6,7 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
-$query = "SELECT p.*, c.cat_name AS cat_name
-           FROM product p
-           JOIN category c ON p.category_id = c.id";
+$query = "SELECT * FROM products";
 
 $result = mysqli_query($conn, $query);
 

@@ -17,14 +17,13 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization');
 $data = json_decode(file_get_contents("php://input"), true);
 
 if (isset($data['id']) && is_numeric($data['id'])) {
-    $id = intval($data['id']);
+    $id = intval($data['id']); 
 
-    
     $columns = [
-        'first_name', 'last_name', 'email', 'mobile_no', 'dob', 'gender', 'address', 'area', 'city', 'district', 'state', 'pincode', 'profile_pic'
+         'cust_id', 'prod_id', 'prod_uniq_no', 'bill_no',   
+        'warnt_period','prof_doc', 'sale_note'
     ];
 
-    // Prepare the update query dynamically
     $updateFields = [];
     $updateValues = [];
 
@@ -35,18 +34,16 @@ if (isset($data['id']) && is_numeric($data['id'])) {
         }
     }
 
-    // If there are no fields to update, send an error response
     if (empty($updateFields)) {
         http_response_code(400);
         echo json_encode(["message" => "No valid fields provided for update."]);
         exit();
     }
 
-    // Add the ID to the end of the values for the WHERE clause
     $updateValues[] = $id;
 
     // Prepare the SQL query
-    $query = "UPDATE customers SET " . implode(', ', $updateFields) . " WHERE id = ?";
+    $query = "UPDATE sales_records SET " . implode(', ', $updateFields) . " WHERE id = ?";
 
     // Prepare the statement and bind the parameters
     if ($stmt = $conn->prepare($query)) {
@@ -63,7 +60,7 @@ if (isset($data['id']) && is_numeric($data['id'])) {
         // Execute the query
         if ($stmt->execute()) {
             http_response_code(200);
-            echo json_encode(["message" => "User record updated successfully!"]);
+            echo json_encode(["message" => "sale records record updated successfully!"]);
         } else {
             // Log the error if the query fails
             error_log("Error executing query: " . $stmt->error);

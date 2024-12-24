@@ -8,38 +8,31 @@ header('Content-Type: application/json');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $data = json_decode(file_get_contents('php://input'), true);
 
-  $uname = $data['uname'];
-  $phone = $data['phone'];
+  $first_name = $data['first_name'];
+  $last_name = $data['last_name'];
   $email = $data['email'];
-  $pro_id = $data['pro_id'];
-  $pro_name = $data['pro_name'];
-  $sales_person = $data['sales_person'];
-  $sales_person_id = $data['sales_person_id'];
-  $area = $data['area'];
-  $state = $data['state'];
-  $district = $data['district'];
-  $city = $data['city'];
+  $mobile_no = $data['mobile_no'];
+  $dob = $data['dob'];
+  $gender = $data['gender'];
   $address = $data['address'];
+  $area = $data['area'];
+  $city = $data['city'];
+  $district = $data['district'];
+  $state = $data['state'];
+  $pincode = $data['pincode'];
+  $profile_pic = $data['profile_pic'];
+  $admin_id = $data['created_by'];
 
-  // Insert into users table
-  $query = "INSERT INTO users (uname, phone, email, pro_name, pro_id, sales_person, sales_person_id, area, state, district, city, address) VALUES ('$uname', '$phone', '$email', '$pro_name', '$pro_id', '$sales_person','$sales_person_id', '$area', '$state', '$district', '$city', '$address')";
+  $query = "INSERT INTO customers (first_name, last_name, email, mobile_no, dob, gender, address, area, city, district, state, pincode, profile_pic, created_by) VALUES ('$first_name', '$last_name', '$email', '$mobile_no', '$dob', '$gender', '$address', '$area', '$city', '$district', '$state', '$pincode', '$profile_pic', '$admin_id')";
 
   if (mysqli_query($conn, $query)) {
-    $user_id = mysqli_insert_id($conn); 
-
-    // Insert into purchase_records table
-    $query = "INSERT INTO purchase_records (user_id, product_id, quantity, purchase_date, sales_person_id) VALUES ('$user_id', '$pro_id', '1', NOW(),'$sales_person_id')";
-
-    if (mysqli_query($conn, $query)) {
-      echo json_encode(['message' => 'User registered and purchase record added successfully']);
-    } else {
-      echo json_encode(['error' => 'Failed to add purchase record']);
-    }
+    echo json_encode(['message' => 'Customer registered successfully']);
   } else {
-    echo json_encode(['error' => 'Registration failed'.$query]);
+    echo json_encode(['error' => 'Registration failed: ' . mysqli_error($conn)]);
   }
 } else {
   echo json_encode(['error' => 'Invalid request method']);
 }
 
+$conn->close();
 ?>

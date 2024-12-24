@@ -9,20 +9,23 @@ header('Content-Type: application/json');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $data = json_decode(file_get_contents('php://input'), true);
 
-  $name = $data['name'];
-  $description = $data['description'];
-  $price = $data['price'];
-  $image = $data['image'];
-  $serial_number = $data['serial_number'];
-  $category_id = $data['category_id'];
+  $p_name = $data['p_name'];
+  $p_modal_no = $data['p_modal_no'];
+  $p_category = $data['p_category'];
+  $p_desc = $data['p_desc'];
+  $p_manual = $data['p_manual'];
+  $p_img = $data['p_img'];
+  $p_height = $data['p_height'];
+  $p_weight = $data['p_weight'];
 
-  $query = "INSERT INTO product (name, description, price, image, serial_number, category_id) 
-             VALUES ('$name', '$description', '$price', '$image', '$serial_number', '$category_id')";
+
+$query = "INSERT INTO products (p_name, p_modal_no, p_category, p_desc, p_manual, p_img, p_height, p_weight) 
+           VALUES ('$p_name', '$p_modal_no', '$p_category', '$p_desc', '$p_manual', '$p_img', '$p_height', '$p_weight')";
 
   if (mysqli_query($conn, $query)) {
-    echo json_encode(['message' => 'Product added successfully']);
+    echo json_encode(['message' => 'products added successfully']);
   } else {
-    echo json_encode(['error' => 'Product added failed']);
+    echo json_encode(['error' => 'products added failed']);
   }
 } else {
   echo json_encode(['error' => 'Invalid request method']);
