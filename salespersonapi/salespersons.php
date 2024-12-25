@@ -10,7 +10,7 @@ if (isset($_GET['admin_id'])) {
     $adminId = $_GET['admin_id'];
 
     // Query to get the admin details
-    $adminQuery = "SELECT * FROM admintable WHERE id = '$adminId'";
+    $adminQuery = "SELECT * FROM usr_details WHERE id = '$adminId'";
     $adminResult = $conn->query($adminQuery);
 
     if ($adminResult && $adminResult->num_rows > 0) {
@@ -27,7 +27,7 @@ if (isset($_GET['admin_id'])) {
         } elseif ($adminRole == 'GeneralManager') {
             $filterQuery = '';
         } elseif ($adminRole == 'RegionAdmin') {
-            $branchAdminsQuery = "SELECT id FROM admintable WHERE region = '$adminRegion' AND role = 'BranchAdmin'";
+            $branchAdminsQuery = "SELECT id FROM usr_details WHERE region = '$adminRegion' AND role = 'BranchAdmin'";
             error_log("BranchAdmins query: $branchAdminsQuery");
             $branchAdminsResult = $conn->query($branchAdminsQuery);
 
@@ -39,8 +39,8 @@ if (isset($_GET['admin_id'])) {
             }
             error_log("BranchAdmin IDs: " . json_encode($branchAdminIds));
 
-            $salesPersonsQuery = "SELECT id FROM admintable WHERE branch IN (
-                                    SELECT branch FROM admintable WHERE id IN (" . implode(',', $branchAdminIds) . ") AND role = 'BranchAdmin'
+            $salesPersonsQuery = "SELECT id FROM usr_details WHERE branch IN (
+                                    SELECT branch FROM usr_details WHERE id IN (" . implode(',', $branchAdminIds) . ") AND role = 'BranchAdmin'
                                  ) AND role = 'SalesPerson'";
             error_log("SalesPersons query: $salesPersonsQuery");
             $salesPersonsResult = $conn->query($salesPersonsQuery);
@@ -69,8 +69,8 @@ if (isset($_GET['admin_id'])) {
             $filterQuery = "WHERE id = '$adminId'";
         }
 
-        $query = "SELECT * FROM admintable $filterQuery";
-        error_log("Final admintable query: $query");
+        $query = "SELECT * FROM usr_details $filterQuery";
+        error_log("Final usr_details query: $query");
 
         $result = $conn->query($query);
 

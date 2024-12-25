@@ -26,7 +26,7 @@ if ($data && isset($data['email']) && isset($data['password'])) {
     $password = $data['password'];
 
     // Query database for user credentials
-    $query = "SELECT * FROM admintable WHERE email = '$email' AND password = '$password'";
+    $query = "SELECT * FROM usr_details WHERE usr_email = '$email' AND usr_pass = '$password'";
     $result = $conn->query($query);
 
     // Check if user exists
@@ -35,11 +35,12 @@ if ($data && isset($data['email']) && isset($data['password'])) {
         $response = array(
             'success' => true,
             'admin_id' => $row['id'],
-            'role' => $row['role'], 
-            'branch' => $row['branch'], 
-            'area' => $row['area'], 
-            'region' => $row['region'], 
-            'name' => $row['name']
+            'first_name' => $row['usr_fname'],
+            'role' => $row['usr_role'],
+            'branch' => $row['branch'],
+            'area' => $row['area'],
+            'address' => $row['address'],
+            'phone' => $row['usr_phone']
         );
         echo json_encode($response);
     } else {

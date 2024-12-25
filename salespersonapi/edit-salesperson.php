@@ -41,7 +41,7 @@ if (isset($data['id']) && is_numeric($data['id'])) {
     $updateValues[] = $id;
 
     if (!empty($updateFields)) {
-        $query = "UPDATE admintable SET " . implode(', ', $updateFields) . " WHERE id = ?";
+        $query = "UPDATE usr_details SET " . implode(', ', $updateFields) . " WHERE id = ?";
 
         if ($stmt = $conn->prepare($query)) {
             // Dynamically bind parameters based on the values

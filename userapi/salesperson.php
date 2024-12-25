@@ -8,7 +8,7 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 $query = "
     SELECT id AS sales_person_id, name AS sales_person
-    FROM admintable
+    FROM usr_details
     WHERE role = 'SalesPerson'
 ";
 

@@ -10,7 +10,7 @@ if (isset($_GET['admin_id'])) {
     $adminId = $_GET['admin_id'];
 
     // Query to get the admin details
-    $adminQuery = "SELECT * FROM admintable WHERE id = '$adminId'";
+    $adminQuery = "SELECT * FROM usr_details WHERE id = '$adminId'";
     $adminResult = $conn->query($adminQuery);
 
     if ($adminResult && $adminResult->num_rows > 0) {
@@ -28,7 +28,7 @@ if (isset($_GET['admin_id'])) {
         } elseif ($adminRole == 'GeneralManager') {
             $filterQuery = '';
         } elseif ($adminRole == 'RegionAdmin') {
-            $branchAdminsQuery = "SELECT id FROM admintable WHERE region = '$adminRegion' AND role = 'BranchAdmin'";
+            $branchAdminsQuery = "SELECT id FROM usr_details WHERE region = '$adminRegion' AND role = 'BranchAdmin'";
             $branchAdminsResult = $conn->query($branchAdminsQuery);
 
             $branchAdminIds = [];
@@ -38,8 +38,8 @@ if (isset($_GET['admin_id'])) {
                 }
             }
 
-            $salesPersonsQuery = "SELECT id FROM admintable WHERE branch IN (
-                                        SELECT branch FROM admintable WHERE id IN (" . implode(',', $branchAdminIds) . ") AND role = 'BranchAdmin'
+            $salesPersonsQuery = "SELECT id FROM usr_details WHERE branch IN (
+                                        SELECT branch FROM usr_details WHERE id IN (" . implode(',', $branchAdminIds) . ") AND role = 'BranchAdmin'
                                     ) AND role = 'SalesPerson'";
             $salesPersonsResult = $conn->query($salesPersonsQuery);
 
@@ -60,28 +60,27 @@ if (isset($_GET['admin_id'])) {
             }
         } elseif ($adminRole == 'BranchAdmin') {
             $filterQuery = "WHERE u.sales_person_id IN (
-                                SELECT id FROM admintable WHERE branch = (
-                                    SELECT branch FROM admintable WHERE id = '$adminId'
+                                SELECT id FROM usr_details WHERE branch = (
+                                    SELECT branch FROM usr_details WHERE id = '$adminId'
                                 )
                             )";
         } elseif ($adminRole == 'SalesPerson') {
             $filterQuery = "WHERE u.sales_person_id = '$adminId'";
         }
 
-        $query = "SELECT ticket_details.*,
-                    customers.first_name AS user_name, 
-                    products.p_name AS product_name
-                    FROM 
-                        ticket_details 
-                    LEFT JOIN 
-                        customers 
-                    ON 
-                        ticket_details.cust_id = customers.id 
-                    LEFT JOIN 
-                        products 
-                    ON 
-                        ticket_details.sales_id = sales_records.id 
-                        $filterQuery";
+        $query = "
+            SELECT 
+                ticket_details.*, 
+                customers.first_name,
+                customers.mobile_no 
+            FROM 
+                ticket_details 
+            INNER JOIN 
+                customers 
+            ON 
+                ticket_details.cust_id = customers.id 
+            $filterQuery";
+
 
         $result = $conn->query($query);
 

@@ -17,7 +17,7 @@ if (!$ticket_id || !$status || !$updated_by || !$command) {
 }
 
 if ($ticket_id && $status && $updated_by && $command) {
-    $query = "UPDATE tickets SET status = ?, command = ?, updated_by = ? WHERE ticket_id = ?";
+    $query = "UPDATE ticket_details SET status = ?, command = ?, updated_by = ? WHERE ticket_id = ?";
     if ($stmt = $conn->prepare($query)) {
         $stmt->bind_param("ssis", $status, $command, $updated_by, $ticket_id);
         if ($stmt->execute()) {

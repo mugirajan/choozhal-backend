@@ -11,7 +11,7 @@ $data = json_decode(file_get_contents('php://input'), true);
 if (!empty($data['id'])) {
     $id = $data['id'];
 
-    $sql = "DELETE FROM admintable WHERE id = ?";
+    $sql = "DELETE FROM usr_details WHERE id = ?";
     if ($stmt = $conn->prepare($sql)) {
         $stmt->bind_param("i", $id);
         

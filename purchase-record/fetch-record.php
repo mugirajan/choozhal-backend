@@ -4,7 +4,7 @@ require_once '../db.php';
 if (isset($_GET['admin_id'])) {
     $adminId = $_GET['admin_id'];
 
-    $query = "SELECT * FROM admintable WHERE id = '$adminId'";
+    $query = "SELECT * FROM usr_details WHERE id = '$adminId'";
     $result = $conn->query($query);
 
     if ($result && $result->num_rows > 0) {
@@ -21,7 +21,7 @@ if (isset($_GET['admin_id'])) {
         } elseif ($adminRole == 'GeneralManager') {
             $filterQuery = '';
         } elseif ($adminRole == 'RegionAdmin') {
-            $branchAdminsQuery = "SELECT id FROM admintable WHERE area = '$adminArea' AND role = 'BranchAdmin'";
+            $branchAdminsQuery = "SELECT id FROM usr_details WHERE area = '$adminArea' AND role = 'BranchAdmin'";
             error_log("BranchAdmins query: $branchAdminsQuery");
             $branchAdminsResult = $conn->query($branchAdminsQuery);
 
@@ -33,7 +33,7 @@ if (isset($_GET['admin_id'])) {
             }
             error_log("BranchAdmin IDs: " . json_encode($branchAdminIds));
 
-            $salesPersonsQuery = "SELECT id FROM admintable WHERE branch IN (SELECT branch FROM admintable WHERE area = '$adminArea' AND role = 'BranchAdmin') AND role = 'SalesPerson'";
+            $salesPersonsQuery = "SELECT id FROM usr_details WHERE branch IN (SELECT branch FROM usr_details WHERE area = '$adminArea' AND role = 'BranchAdmin') AND role = 'SalesPerson'";
             error_log("SalesPersons query: $salesPersonsQuery");
             $salesPersonsResult = $conn->query($salesPersonsQuery);
 
@@ -56,7 +56,7 @@ if (isset($_GET['admin_id'])) {
             }
         } elseif ($adminRole == 'BranchAdmin') {
             $adminBranch = $row['branch']; 
-            $filterQuery = "WHERE sales_person_id IN (SELECT id FROM admintable WHERE branch = '$adminBranch')";
+            $filterQuery = "WHERE sales_person_id IN (SELECT id FROM usr_details WHERE branch = '$adminBranch')";
         } elseif ($adminRole == 'SalesPerson') {
             $filterQuery = "WHERE sales_person_id = '$adminId'";
         }
