@@ -2,8 +2,8 @@
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Content-Type: application/json");
 
-// Database connection setup
 $dbHost = '217.21.88.10';
 $dbPort = '3306';
 $dbUsername = 'u140987190_choozhal_dev';
@@ -12,12 +12,10 @@ $dbName = 'u140987190_choozhal_app';
 
 $conn = new mysqli($dbHost, $dbUsername, $dbPassword, $dbName, $dbPort);
 
-// Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Get the raw POST data
 $rawData = file_get_contents('php://input');
 $data = json_decode($rawData, true);
 
@@ -25,11 +23,9 @@ if ($data && isset($data['email']) && isset($data['password'])) {
     $email = $data['email'];
     $password = $data['password'];
 
-    // Query database for user credentials
     $query = "SELECT * FROM usr_details WHERE usr_email = '$email' AND usr_pass = '$password'";
     $result = $conn->query($query);
 
-    // Check if user exists
     if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
         $response = array(

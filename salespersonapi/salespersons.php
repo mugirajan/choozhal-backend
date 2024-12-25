@@ -15,7 +15,7 @@ if (isset($_GET['admin_id'])) {
 
     if ($adminResult && $adminResult->num_rows > 0) {
         $adminRow = $adminResult->fetch_assoc();
-        $adminRole = $adminRow['role'];
+        $adminRole = $adminRow['usr_role'];
         $adminRegion = $adminRow['region'];
 
         $filterQuery = '';

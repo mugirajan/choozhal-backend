@@ -9,7 +9,7 @@ if (isset($_GET['admin_id'])) {
 
     if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        $adminRole = $row['role'];
+        $adminRole = $row['usr_role'];
         $adminArea = $row['area']; 
 
         $filterQuery = '';
