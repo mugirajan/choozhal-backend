@@ -70,15 +70,29 @@ if (isset($_GET['admin_id'])) {
 
         $query = "
             SELECT 
-                ticket_details.*, 
+                ticket_details.*,
+                products.p_name AS product_name,
                 customers.first_name,
-                customers.mobile_no 
+                customers.mobile_no,
+                usr_details.usr_fname AS salesperson_name
             FROM 
                 ticket_details 
             INNER JOIN 
+                sales_records 
+            ON 
+                ticket_details.sales_id = sales_records.id
+            INNER JOIN 
+                products 
+            ON 
+                sales_records.prod_id = products.id
+            INNER JOIN 
                 customers 
             ON 
-                ticket_details.cust_id = customers.id 
+                ticket_details.cust_id = customers.id
+            INNER JOIN 
+                usr_details 
+            ON 
+                sales_records.salesperson_id = usr_details.id
             $filterQuery";
 
 

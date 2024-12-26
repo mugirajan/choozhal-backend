@@ -7,9 +7,9 @@ header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 $query = "
-    SELECT id AS sales_person_id, name AS sales_person
+    SELECT id AS sales_person_id, usr_fname AS sales_person
     FROM usr_details
-    WHERE role = 'SalesPerson'
+    WHERE usr_role = 'SalesPerson'
 ";
 
 $result = mysqli_query($conn, $query);

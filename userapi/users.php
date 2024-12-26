@@ -62,7 +62,23 @@ if (isset($_GET['admin_id'])) {
         }
 
         // Updated query with product table join
-        $query = "SELECT * FROM customers $filterQuery";
+        $query = "
+        SELECT 
+            customers.*,
+            sales_records.salesperson_id,
+            usr_details.usr_fname AS salesperson_name
+        FROM 
+            customers 
+        $filterQuery
+        LEFT JOIN 
+            sales_records 
+        ON 
+            customers.id = sales_records.cust_id
+        LEFT JOIN 
+            usr_details 
+        ON 
+            sales_records.salesperson_id = usr_details.id
+    ";
 
         error_log("Final users query: $query");
         $result = $conn->query($query);
