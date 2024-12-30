@@ -135,28 +135,55 @@ function createCustomerDetails($data, $crntUsr)
 }
 
 
-function updateCustomerdetails($data)
+function updateCustomerDetails($data)
 {
     global $pdo;
 
+    // Extract data with defaults
     $id = $data['id'] ?? null;
-    $name = $data['name'] ?? '';
+    $first_name = $data['fName'] ?? '';
+    $last_name = $data['lName'] ?? '';
     $email = $data['email'] ?? '';
-    $phone = $data['phone'] ?? '';
+    $mobile_no = $data['mobile_no'] ?? '';
+    $dob = $data['dob'] ?? '';
+    $gender = $data['gender'] ?? '';
+    $profile_pic = $data['profilePic'] ?? '';
+    $address = $data['address'] ?? '';
+    $area = $data['area'] ?? '';
+    $city = $data['city'] ?? '';
+    $district = $data['district'] ?? '';
+    $state = $data['state'] ?? '';
+    $pincode = $data['pincode'] ?? '';
+    $is_active = isset($data['isActive']) && $data['isActive'] ? 1 : 0; // Convert boolean to tinyint
 
+    // Check if ID is provided
     if (!$id) {
         return ["error" => "Customer ID is required"];
     }
 
-    $stmt = $pdo->prepare("UPDATE customers SET name = ?, email = ?, phone = ? WHERE id = ?");
-    $stmt->execute([$name, $email, $phone, $id]);
+    // SQL query to update the customer
+    $stmt = $pdo->prepare("
+        UPDATE customers 
+        SET 
+            first_name = ?, last_name = ?, email = ?, mobile_no = ?, dob = ?, gender = ?, profile_pic = ?, 
+            address = ?, area = ?, city = ?, district = ?, state = ?, pincode = ?, is_active = ?
+        WHERE id = ?
+    ");
 
+    // Execute the query with bound values
+    $stmt->execute([
+        $first_name, $last_name, $email, $mobile_no, $dob, $gender, $profile_pic,
+        $address, $area, $city, $district, $state, $pincode, $is_active, $id
+    ]);
+
+    // Check if the update was successful
     if ($stmt->rowCount()) {
         return ["message" => "Customer updated successfully"];
     } else {
         return ["error" => "Failed to update customer or no changes made"];
     }
 }
+
 
 
 function deleteCustomerdetails($data, $crntUsr)
