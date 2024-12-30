@@ -1,7 +1,7 @@
 
 <?php
 
-require_once "../db.php";
+require_once "../../db.php";
 
 
 $rawInput = file_get_contents("php://input");
