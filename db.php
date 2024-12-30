@@ -16,5 +16,11 @@ $conn = new mysqli($dbHost, $dbUsername, $dbPassword, $dbName, $dbPort);
 if (!$conn) {
   die('Connection failed: ' . mysqli_connect_error());
 }
+try {
+  $pdo = new PDO('mysql:host=' . $dbHost . ';port=' . $dbPort . ';dbname=' . $dbName, $dbUsername, $dbPassword);
+  $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+  die("ERROR: Could not connect. " . $e->getMessage());
+}
 
 ?>
