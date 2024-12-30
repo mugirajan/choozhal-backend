@@ -1,7 +1,7 @@
 
 <?php
 
-require_once "../db.php";
+require_once "../../db.php";
 
 
 $rawInput = file_get_contents("php://input");
@@ -59,8 +59,8 @@ function getListOfAllCustomers($crntUsr)
         $customerList = array_map(function ($values) {
             return [
                 'id' => $values['id'],
-                'fName' => $values['first_name'],
-                'lName' => $values['last_name'],
+                'first_name' => $values['first_name'],
+                'last_name' => $values['last_name'],
                 'email' => $values['email'],
                 'mobile_no' => $values['mobile_no'],
                 'dob' => $values['dob'],
@@ -96,8 +96,8 @@ function createCustomerDetails($data, $crntUsr)
     global $pdo;
 
     // Extract data with default values
-    $first_name = $data['fName'] ?? '';
-    $last_name = $data['lName'] ?? '';
+    $first_name = $data['first_name'] ?? '';
+    $last_name = $data['last_name'] ?? '';
     $email = $data['email'] ?? '';
     $mobile_no = $data['mobile_no'] ?? '';
     $dob = $data['dob'] ?? '';
