@@ -1,7 +1,7 @@
 
 <?php
 
-require_once "../../db.php";
+require_once "../db.php";
 
 
 $rawInput = file_get_contents("php://input");
@@ -48,23 +48,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 function getListOfAllCustomers($crntUsr)
 {
-    global $conn;
-
+    global $pdo;
+    $adminId = $crntUsr;
     try {
-        $stmt = $conn->prepare("SELECT * FROM customers WHERE is_deleted = ?");
-        $stmt->bind_param("i", $isDeleted);
-        $isDeleted = 0;
-        $stmt->execute();
-
-        $result = $stmt->get_result();
-        $customers = $result->fetch_all(MYSQLI_ASSOC);
+        // Fetch all rows
+        $stmt = $pdo->query("SELECT * FROM customers Where is_deleted = false");
+        $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Transform the data if needed
         $customerList = array_map(function ($values) {
             return [
                 'id' => $values['id'],
-                'first_name' => $values['first_name'],
-                'last_name' => $values['last_name'],
+                'fName' => $values['first_name'],
+                'lName' => $values['last_name'],
                 'email' => $values['email'],
                 'mobile_no' => $values['mobile_no'],
                 'dob' => $values['dob'],
@@ -100,8 +96,8 @@ function createCustomerDetails($data, $crntUsr)
     global $pdo;
 
     // Extract data with default values
-    $first_name = $data['first_name'] ?? '';
-    $last_name = $data['last_name'] ?? '';
+    $first_name = $data['fName'] ?? '';
+    $last_name = $data['lName'] ?? '';
     $email = $data['email'] ?? '';
     $mobile_no = $data['mobile_no'] ?? '';
     $dob = $data['dob'] ?? '';
@@ -113,7 +109,7 @@ function createCustomerDetails($data, $crntUsr)
     $district = $data['district'] ?? '';
     $state = $data['state'] ?? '';
     $pincode = $data['pincode'] ?? '';
-    $is_active = isset($data['isActive']) && $data['isActive'] ? 1 : 0;
+    $is_active = isset($data['isActive']) && $data['isActive'] ? 1 : 0; // Convert boolean to tinyint
     $created_by = $crntUsr ?? '';
 
     // SQL query with placeholders
