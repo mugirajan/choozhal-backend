@@ -2,7 +2,7 @@
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Content-Type: application/json");
+// header("Content-Type: application/json");
 
 $dbHost = '217.21.88.10';
 $dbPort = '3306';
