@@ -4,13 +4,10 @@
 require_once "../../db.php";
 
 
-$rawInput = file_get_contents("php://input");
-$data = json_decode($rawInput, true);
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
-    if (!isset($data['target'], $data['data'], $data['crntUsr'])) {
+    if (!isset($_POST['target'], $_POST['data'], $_POST['crntUsr'])) {
         echo json_encode([
             "success" => false,
             "error" => "Invalid request. Missing 'target', 'data', or 'crntUsr' in payload."
@@ -18,16 +15,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 
-    $method = $data['target'];
-    $getData = $data['data'];
-    $crntUsr = $data['crntUsr'];
+    $method = $_POST['target'];
+    $getData = $_POST['data'];
+    $crntUsr = $_POST['crntUsr'];
+    $file = '';
+
+    if ($method == 'createCustomer' || $method == 'updateCustomer') {
+
+        if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+            $file = $_FILES['file'];
+        } else {
+            echo json_encode([
+                "success" => false,
+                "error" => "Profile picture is not available or upload failed."
+            ]);
+            exit;
+        }
+    }
+
 
     switch ($method) {
         case 'createCustomer':
-            echo json_encode(createCustomerdetails($getData, $crntUsr));
+            echo json_encode(createCustomerdetails($getData, $crntUsr, $file));
             break;
         case 'updateCustomer':
-            echo json_encode(updateCustomerdetails($getData, $crntUsr));
+            echo json_encode(updateCustomerdetails($getData, $crntUsr, $file));
             break;
         case 'deleteCustomer':
             echo json_encode(deleteCustomerdetails($getData, $crntUsr));
@@ -44,6 +56,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
+
+function moveFile($file)
+{
+
+    $targetDir = "../../uploads/profile-pic/";
+
+    if (!file_exists($targetDir)) {
+        mkdir($targetDir, 0777, true);
+    }
+
+    if ($file['error'] === UPLOAD_ERR_OK) {
+        // Extract the file name and extension
+        $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+
+        // Generate a unique file name
+        $uniqueName = $originalName . '_' . uniqid() . '.' . $extension;
+
+        // Full path to save the file
+        $targetFilePath = $targetDir . $uniqueName;
+
+        // Move the uploaded file to the target directory
+        if (move_uploaded_file($file['tmp_name'], $targetFilePath)) {
+            return [
+                'status' => 'success',
+                'filePath' => '/uploads/profile-pic/' . $uniqueName
+            ];
+        } else {
+            return [
+                'status' => 'error',
+                'message' => "Failed to move the uploaded file."
+            ];
+        }
+    } else {
+        return "File upload error: " . $file['error'];
+    }
+}
 
 
 function getListOfAllCustomers($crntUsr)
@@ -91,77 +140,161 @@ function getListOfAllCustomers($crntUsr)
 }
 
 
-function createCustomerDetails($data, $crntUsr)
+function createCustomerDetails($data, $crntUsr, $file)
 {
+
+
     global $pdo;
 
-    // Extract data with default values
-    $first_name = $data['first_name'] ?? '';
-    $last_name = $data['last_name'] ?? '';
-    $email = $data['email'] ?? '';
-    $mobile_no = $data['mobile_no'] ?? '';
-    $dob = $data['dob'] ?? '';
-    $gender = $data['gender'] ?? '';
-    $profile_pic = $data['profilePic'] ?? '';
-    $address = $data['address'] ?? '';
-    $area = $data['area'] ?? '';
-    $city = $data['city'] ?? '';
-    $district = $data['district'] ?? '';
-    $state = $data['state'] ?? '';
-    $pincode = $data['pincode'] ?? '';
-    $is_active = isset($data['isActive']) && $data['isActive'] ? 1 : 0; // Convert boolean to tinyint
-    $created_by = $crntUsr ?? '';
+    $profile_pic = moveFile($file);
 
-    // SQL query with placeholders
-    $stmt = $pdo->prepare("
+
+    $data = json_decode($data, true);
+
+    if ($profile_pic['status'] == 'success') {
+
+        // Extract data with default values
+        $first_name = $data['fName'];
+        $last_name = $data['lName'];
+        $email = $data['email'];
+        $mobile_no = $data['mobile_no'];
+        $dob = $data['dob'];
+        $gender = $data['gender'];
+
+        $profile_pic =  $profile_pic['filePath'];
+        $address = $data['address'];
+        $area = $data['area'];
+        $city = $data['city'];
+        $district = $data['district'];
+        $state = $data['state'];
+        $pincode = $data['pincode'];
+        $is_active = isset($data['isActive']) && $data['isActive'] ? 1 : 0; // Convert boolean to tinyint
+        $created_by = $crntUsr;
+
+
+        // SQL query with placeholders
+        $stmt = $pdo->prepare("
         INSERT INTO customers (
             first_name, last_name, email, mobile_no, dob, gender, profile_pic,
             address, area, city, district, state, pincode, is_active, created_by
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
-    // Execute query with bound values
-    $stmt->execute([
-        $first_name, $last_name, $email, $mobile_no, $dob, $gender, $profile_pic,
-        $address, $area, $city, $district, $state, $pincode, $is_active, $created_by
-    ]);
+        // Execute query with bound values
+        $stmt->execute([
+            $first_name,
+            $last_name,
+            $email,
+            $mobile_no,
+            $dob,
+            $gender,
+            $profile_pic,
+            $address,
+            $area,
+            $city,
+            $district,
+            $state,
+            $pincode,
+            $is_active,
+            $created_by
+        ]);
 
-    // Check if the insertion was successful
-    if ($stmt->rowCount()) {
-        return ["message" => "Customer created successfully"];
+
+        // Check if the insertion was successful
+        if ($stmt->rowCount()) {
+            return ["success" => true, "message" => "Customer created successfully"];
+        } else {
+            return ["error" => "Failed to create customer"];
+        }
     } else {
-        return ["error" => "Failed to create customer"];
+        return ["error" => "Failed to upload image"];
     }
 }
 
 
-function updateCustomerdetails($data)
+function updateCustomerDetails($data, $crntUsr, $file)
 {
     global $pdo;
 
-    $id = $data['id'] ?? null;
-    $name = $data['name'] ?? '';
-    $email = $data['email'] ?? '';
-    $phone = $data['phone'] ?? '';
+    // Extract data with defaults
+    $profile_pic = moveFile($file);
 
-    if (!$id) {
-        return ["error" => "Customer ID is required"];
-    }
 
-    $stmt = $pdo->prepare("UPDATE customers SET name = ?, email = ?, phone = ? WHERE id = ?");
-    $stmt->execute([$name, $email, $phone, $id]);
+    $data = json_decode($data, true);
 
-    if ($stmt->rowCount()) {
-        return ["message" => "Customer updated successfully"];
+    if ($profile_pic['status'] == 'success') {
+
+        // Extract data with default values
+        $id = $data['id'];
+        $first_name = $data['fName'];
+        $last_name = $data['lName'];
+        $email = $data['email'];
+        $mobile_no = $data['mobile_no'];
+        $dob = $data['dob'];
+        $gender = $data['gender'];
+
+        $profile_pic =  $profile_pic['filePath'];
+        $address = $data['address'];
+        $area = $data['area'];
+        $city = $data['city'];
+        $district = $data['district'];
+        $state = $data['state'];
+        $pincode = $data['pincode'];
+        $is_active = isset($data['isActive']) && $data['isActive'] ? 1 : 0; // Convert boolean to tinyint
+        $updated_by = $crntUsr;
+
+        // Check if ID is provided
+        if (!$id) {
+            return ["error" => "Customer ID is required"];
+        }
+
+        // SQL query to update the customer
+        $stmt = $pdo->prepare("
+        UPDATE customers 
+        SET 
+            first_name = ?, last_name = ?, email = ?, mobile_no = ?, dob = ?, gender = ?, profile_pic = ?, 
+            address = ?, area = ?, city = ?, district = ?, state = ?, pincode = ?, is_active = ?, updated_by = ?
+        WHERE id = ?
+    ");
+
+        // Execute the query with bound values
+        $stmt->execute([
+            $first_name,
+            $last_name,
+            $email,
+            $mobile_no,
+            $dob,
+            $gender,
+            $profile_pic,
+            $address,
+            $area,
+            $city,
+            $district,
+            $state,
+            $pincode,
+            $is_active,
+            $updated_by,
+            $id
+        ]);
+
+        // Check if the update was successful
+        if ($stmt->rowCount()) {
+            return ["success" => true, "message" => "Customer updated successfully"];
+        } else {
+            return ["error" => "Failed to update customer or no changes made"];
+        }
     } else {
-        return ["error" => "Failed to update customer or no changes made"];
+        return ["error" => "Failed to upload image"];
     }
 }
+
 
 
 function deleteCustomerdetails($data, $crntUsr)
 {
     global $pdo;
+
+    $data = json_decode($data, true);
 
     $id = $data['id'] ?? null;
 
