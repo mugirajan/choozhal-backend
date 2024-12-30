@@ -241,7 +241,7 @@ function updateCustomerDetails($data, $crntUsr, $file)
         $state = $data['state'];
         $pincode = $data['pincode'];
         $is_active = isset($data['isActive']) && $data['isActive'] ? 1 : 0; // Convert boolean to tinyint
-        $created_by = $crntUsr;
+        $updated_by = $crntUsr;
 
         // Check if ID is provided
         if (!$id) {
@@ -253,7 +253,7 @@ function updateCustomerDetails($data, $crntUsr, $file)
         UPDATE customers 
         SET 
             first_name = ?, last_name = ?, email = ?, mobile_no = ?, dob = ?, gender = ?, profile_pic = ?, 
-            address = ?, area = ?, city = ?, district = ?, state = ?, pincode = ?, is_active = ?
+            address = ?, area = ?, city = ?, district = ?, state = ?, pincode = ?, is_active = ?, updated_by = ?
         WHERE id = ?
     ");
 
@@ -273,6 +273,7 @@ function updateCustomerDetails($data, $crntUsr, $file)
             $state,
             $pincode,
             $is_active,
+            $updated_by,
             $id
         ]);
 
@@ -292,6 +293,8 @@ function updateCustomerDetails($data, $crntUsr, $file)
 function deleteCustomerdetails($data, $crntUsr)
 {
     global $pdo;
+
+    $data = json_decode($data, true);
 
     $id = $data['id'] ?? null;
 
