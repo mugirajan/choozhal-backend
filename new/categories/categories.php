@@ -51,6 +51,11 @@ function createCategory($data, $crntUsr)
     // Extract data with default values
     $cat_name = $data['cat_name'] ?? '';
 
+    // Basic validation
+    if (empty($cat_name)) {
+        return ["error" => "Category name is required"];
+    }
+
     // SQL query with placeholders
     $stmt = $conn->prepare("
         INSERT INTO category (
@@ -58,10 +63,11 @@ function createCategory($data, $crntUsr)
         ) VALUES (?, NOW())
     ");
 
-    // Execute query with bound values
-    $stmt->execute([
-        $cat_name
-    ]);
+    // Bind values
+    $stmt->bind_param("s", $cat_name);
+
+    // Execute query
+    $stmt->execute();
 
     // Check if the insertion was successful
     if ($stmt->affected_rows) {
@@ -89,10 +95,11 @@ function updateCategory($data)
         WHERE id = ?
     ");
 
-    // Execute query with bound values
-    $stmt->execute([
-        $cat_name, $id
-    ]);
+    // Bind values
+    $stmt->bind_param("si", $cat_name, $id);
+
+    // Execute query
+    $stmt->execute();
 
     // Check if the update was successful
     if ($stmt->affected_rows) {
@@ -101,6 +108,7 @@ function updateCategory($data)
         return ["error" => "Failed to update category or no changes made"];
     }
 }
+
 function deleteCategory($data, $crntUsr)
 {
     global $conn;
@@ -114,8 +122,12 @@ function deleteCategory($data, $crntUsr)
     // SQL query with placeholders
     $stmt = $conn->prepare("UPDATE category SET is_deleted = ?, deleted_date = NOW() WHERE id = ?");
 
-    // Execute query with bound values
-    $stmt->execute([true, $id]);
+    // Bind values
+    $isDeleted = 1;
+    $stmt->bind_param("ii", $isDeleted, $id);
+
+    // Execute query
+    $stmt->execute();
 
     // Check if the deletion was successful
     if ($stmt->affected_rows) {

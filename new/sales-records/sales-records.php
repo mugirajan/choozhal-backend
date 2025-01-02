@@ -239,16 +239,21 @@ function deleteSalesRecord($data, $crntUsr)
         return ["error" => "Sales record ID is required"];
     }
 
-    $stmt = $pdo->prepare("UPDATE sales_records SET is_deleted = ?, updated_by = ? WHERE id = ?");
-    $stmt->execute([true, $crntUsr, $id]);
+    $stmt = $pdo->prepare("DELETE FROM sales_records WHERE id = ?");
 
-    if ($stmt->rowCount()) {
+    try {
+        $stmt->execute([$id]);
+    } catch (PDOException $e) {
+        return ["error" => $e->getMessage()];
+    }
+
+    if ($stmt->rowCount() > 0) {
         return ["message" => "Sales record deleted successfully"];
     } else {
-        return ["error" => "Failed to delete sales record or sales record not found"];
+        $errorInfo = $stmt->errorInfo();
+        return ["error" => "Failed to delete sales record: " . $errorInfo[2]];
     }
 }
-
 
 function getASalesRecord($data)
 {

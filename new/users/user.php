@@ -104,22 +104,7 @@ function getListOfAllUsers($adminId)
 
         // Fetch users details
         $query = "
-            SELECT 
-                customers.*,
-                sales_records.salesperson_id,
-                usr_details.usr_fname AS salesperson_name
-            FROM 
-                customers 
-            $filterQuery
-            LEFT JOIN 
-                sales_records 
-            ON 
-                customers.id = sales_records.cust_id
-            LEFT JOIN 
-                usr_details 
-            ON 
-                sales_records.salesperson_id = usr_details.id
-        ";
+            SELECT * FROM usr_details $filterQuery";
 
         error_log("Final users query: $query");
         $stmt = $conn->prepare($query);
@@ -140,6 +125,7 @@ function getListOfAllUsers($adminId)
         ];
     }
 }
+
 function createUserDetails($data, $crntUsr)
 {
     global $conn;
@@ -160,31 +146,56 @@ function createUserDetails($data, $crntUsr)
     $is_active = isset($data['is_active']) && $data['is_active'] ? 1 : 0;
     $created_by = $crntUsr ?? '';
 
-    // SQL query with placeholders
-    $stmt = $conn->prepare("
-        INSERT INTO usr_details (
-            usr_fname, usr_lname, usr_email, usr_pass,usr_role, usr_dob, address, usr_phone,
-            date_of_joining, branch, region, area, is_active, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ");
+    // Validate email address
+    $usr_email = filter_var($usr_email, FILTER_VALIDATE_EMAIL);
+    if (!$usr_email) {
+        return ["status" => "error", "message" => "Invalid email address"];
+    }
 
-    // Execute query with bound values
-    $stmt->execute([
-        $usr_fname, $usr_lname, $usr_email, $usr_pass, $usr_role, $usr_dob, $address, $usr_phone,
-        $date_of_joining, $branch, $region, $area, $is_active, $created_by
-    ]);
+    // Hash password
+    $usr_pass = password_hash($usr_pass, PASSWORD_DEFAULT);
+
+    // SQL query with placeholders
+    $query = "
+        INSERT INTO usr_details (
+            usr_fname, usr_lname, usr_email, usr_pass, usr_role, usr_dob, 
+            address, usr_phone, date_of_joining, branch, region, area, 
+            is_active, created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ";
+
+    // Prepare query
+    $stmt = $conn->prepare($query);
+    if (!$stmt) {
+        // Handle prepare error
+        return ["status" => "error", "message" => "Failed to prepare query: " . $conn->error];
+    }
+
+    // Bind parameters
+    $stmt->bind_param(
+        "ssssssssssssss",
+        $usr_fname, $usr_lname, $usr_email, $usr_pass, $usr_role, $usr_dob, 
+        $address, $usr_phone, $date_of_joining, $branch, $region, $area, 
+        $is_active, $created_by
+    );
+
+    // Execute query
+    if (!$stmt->execute()) {
+        // Handle execute error
+        return ["status" => "error", "message" => "Failed to execute query: " . $stmt->error];
+    }
 
     // Check if the insertion was successful
     if ($stmt->affected_rows) {
-        return ["message" => "User created successfully"];
+        return ["status" => "success", "message" => "User created successfully"];
     } else {
-        return ["error" => "Failed to create user"];
+        return ["status" => "error", "message" => "Failed to create user"];
     }
 }
 
 function updateUserDetails($data)
 {
-    global $conn;
+    global $pdo;
 
     $id = $data['id'] ?? null;
     $usr_fname = $data['usr_fname'] ?? '';
@@ -200,27 +211,51 @@ function updateUserDetails($data)
     $region = $data['region'] ?? '';
     $area = $data['area'] ?? '';
     $is_active = isset($data['is_active']) && $data['is_active'] ? 1 : 0;
+    $updated_by = $crntUsr ?? '';
 
     if (!$id) {
         return ["error" => "User ID is required"];
     }
 
-    // SQL query with placeholders
-    $stmt = $conn->prepare("
-        UPDATE usr_details SET
-            usr_fname = ?, usr_lname = ?, usr_email = ?, usr_pass = ?, usr_role = ?, usr_dob = ?,
-            address = ?, usr_phone = ?, date_of_joining = ?, branch = ?, region = ?, area = ?, is_active = ?
+    $stmt = $pdo->prepare("
+        UPDATE usr_details 
+        SET 
+            usr_fname = ?, 
+            usr_lname = ?, 
+            usr_email = ?, 
+            usr_pass = ?, 
+            usr_role = ?, 
+            usr_dob = ?, 
+            address = ?, 
+            usr_phone = ?, 
+            date_of_joining = ?, 
+            branch = ?, 
+            region = ?, 
+            area = ?, 
+            is_active = ?, 
+            updated_by = ?
         WHERE id = ?
     ");
 
-    // Execute query with bound values
     $stmt->execute([
-        $usr_fname, $usr_lname, $usr_email, $usr_pass, $usr_role, $usr_dob,
-        $address, $usr_phone, $date_of_joining, $branch, $region, $area, $is_active, $id
+        $usr_fname, 
+        $usr_lname, 
+        $usr_email, 
+        $usr_pass, 
+        $usr_role, 
+        $usr_dob, 
+        $address, 
+        $usr_phone, 
+        $date_of_joining, 
+        $branch, 
+        $region, 
+        $area, 
+        $is_active, 
+        $updated_by,
+        $id
     ]);
 
-    // Check if the update was successful
-    if ($stmt->affected_rows) {
+    if ($stmt->rowCount()) {
         return ["message" => "User updated successfully"];
     } else {
         return ["error" => "Failed to update user or no changes made"];
@@ -238,13 +273,16 @@ function deleteUserDetails($data, $crntUsr)
     }
 
     // SQL query with placeholders
-    $stmt = $conn->prepare("UPDATE usr_details SET is_deleted = ?, updated_by = ? WHERE id = ?");
+    $stmt = $conn->prepare("DELETE FROM usr_details WHERE id = ?");
 
-    // Execute query with bound values
-    $stmt->execute([true, $crntUsr, $id]);
+    // Bind values
+    $stmt->bind_param("i", $id);
+
+    // Execute query
+    $stmt->execute();
 
     // Check if the deletion was successful
-    if ($stmt->affected_rows) {
+    if ($stmt->affected_rows !== 0) {
         return ["message" => "User deleted successfully"];
     } else {
         return ["error" => "Failed to delete user or user not found"];
