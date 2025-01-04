@@ -92,42 +92,40 @@ function createTicket($data, $crntUsr)
         ];
     }
 }
+
 function updateTicket($data, $crntUsr)
 {
     global $pdo;
 
-    $data = json_decode($data, true);
-
     $id = $data['id'];
-    $sales_id = $data['sales_id'];
-    $cust_id = $data['cust_id'];
-    $salesperson_id = $data['salesperson_id'];
-    $type = $data['type'];
-    $t_desc = $data['t_desc'];
-    $status = $data['status'];
 
     if (!$id) {
         return ["error" => "Ticket ID is required"];
     }
 
-    $stmt = $pdo->prepare("
-    UPDATE ticket_details 
-    SET 
-        sales_id = ?, cust_id = ?, salesperson_id = ?, type = ?, t_desc = ?, status = ?, 
-        updated_by = ?
-    WHERE id = ?
-");
+    $fields = [];
+    $values = [];
 
-    $stmt->execute([
-        $sales_id,
-        $cust_id,
-        $salesperson_id,
-        $type,
-        $t_desc,
-        $status,
-        $crntUsr,
-        $id
-    ]);
+    foreach ($data as $key => $value) {
+        if ($key != 'id') {
+            $fields[] = "$key = ?";
+            $values[] = $value;
+        }
+    }
+
+    $values[] = $crntUsr;
+    $values[] = $id;
+
+    $fields[] = "updated_by = ?";
+    $fields[] = "updated_at = NOW()";
+
+    $stmt = $pdo->prepare("
+        UPDATE ticket_details 
+        SET " . implode(', ', $fields) . "
+        WHERE id = ?
+    ");
+
+    $stmt->execute($values);
 
     if ($stmt->rowCount()) {
         return ["success" => true, "message" => "Ticket updated successfully"];
@@ -135,6 +133,7 @@ function updateTicket($data, $crntUsr)
         return ["error" => "Failed to update ticket or no changes made"];
     }
 }
+
 
 function deleteTicket($data, $crntUsr)
 {
