@@ -33,6 +33,9 @@ if (!isset($payload['target'], $payload['data'], $payload['crntUsr'])) {
         case 'getListOfAllTickets':
             echo json_encode(getListOfAllTickets($crntUsr));
             break;
+        case 'getTicketChatMessages':
+            echo json_encode(getTicketChatMessages($getData));
+            break;
         case 'getATicket':
             echo json_encode(getATicket($getData));
             break;
@@ -236,11 +239,14 @@ function getListOfAllTickets($crntUsr)
             c.district,
             c.state,
             c.pincode,
+
             sr.prod_uniq_no,
             sr.bill_no,
             sr.bill_date,
             sr.warnt_period,
-            p.p_name
+            
+            p.p_name,
+            s.usr_fname
           FROM 
             ticket_details td
           LEFT JOIN 
@@ -255,6 +261,10 @@ function getListOfAllTickets($crntUsr)
             products p
           ON 
             sr.prod_id = p.id
+          LEFT JOIN 
+            usr_details s
+          ON 
+            td.salesperson_id = s.id
           $filterQuery";
 
             $result = $pdo->query($query);
@@ -306,4 +316,46 @@ function getATicket($data)
     }
 }
 
+function getTicketChatMessages($data)
+{
+    global $pdo;
+
+    $ticketId = $data['ticketId'] ?? null;
+
+    if (!$ticketId) {
+        return ["error" => "Ticket ID is required"];
+    }
+
+    try {
+        $query = "SELECT tc.* 
+        FROM ticket_chats tc
+        WHERE tc.ticket_id = (SELECT uniq_id FROM ticket_details WHERE id = :ticketId)
+        ORDER BY tc.id ASC";
+
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':ticketId', $ticketId);
+        $stmt->execute();
+        
+        
+        $chatMessages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($chatMessages)) {
+            return [
+                'message' => 'No data found for the specified ticket ID.',
+                'data' => [],
+                'totalCount' => 0
+            ];
+        } else {
+            return [
+                'data' => $chatMessages,
+                'totalCount' => count($chatMessages),
+            ];
+        }
+    } catch (PDOException $e) {
+        return [
+            'error' => true,
+            'message' => 'Error fetching ticket chat messages: ' . $e->getMessage(),
+        ];
+    }
+}
 ?>

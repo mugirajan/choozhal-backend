@@ -6,7 +6,10 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
-$query = "SELECT * FROM products";
+$query = "SELECT p.*, c.cat_name 
+          FROM products p 
+          INNER JOIN category c 
+          ON p.p_Category = c.id";
 
 $result = mysqli_query($conn, $query);
 
