@@ -146,16 +146,7 @@ function createUserDetails($data, $crntUsr)
     $is_active = isset($data['is_active']) && $data['is_active'] ? 1 : 0;
     $created_by = $crntUsr ?? '';
 
-    // Validate email address
-    $usr_email = filter_var($usr_email, FILTER_VALIDATE_EMAIL);
-    if (!$usr_email) {
-        return ["status" => "error", "message" => "Invalid email address"];
-    }
-
-    // Hash password
-    $usr_pass = password_hash($usr_pass, PASSWORD_DEFAULT);
-
-    // SQL query with placeholders
+    
     $query = "
         INSERT INTO usr_details (
             usr_fname, usr_lname, usr_email, usr_pass, usr_role, usr_dob, 
