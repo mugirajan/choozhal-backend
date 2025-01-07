@@ -329,7 +329,7 @@ function getTicketChatMessages($data)
     try {
         $query = "SELECT tc.* 
         FROM ticket_chats tc
-        WHERE tc.ticket_id = (SELECT uniq_id FROM ticket_details WHERE id = :ticketId)
+        WHERE tc.ticket_id = :ticketId
         ORDER BY tc.id ASC";
 
         $stmt = $pdo->prepare($query);

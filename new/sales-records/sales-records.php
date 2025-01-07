@@ -15,30 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 
-    $method = $data['target'];
+    $target = $data['target'];
     $getData = $data['data'];
     $crntUsr = $data['crntUsr'];
-    $file = '';
 
-    if ($method == 'createSalesRecord' || $method == 'updateSalesRecord') {
-
-        if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-            $file = $_FILES['file'];
-        } else {
-            echo json_encode([
-                "success" => false,
-                "error" => "Proof Document is not available or upload failed."
-            ]);
-            exit;
-        }
-    }
-
-    switch ($method) {
+    switch ($target) {
         case 'createSalesRecord':
-            echo json_encode(createSalesRecord($getData, $crntUsr, $file));
+            echo json_encode(createSalesRecord($getData, $crntUsr));
             break;
         case 'updateSalesRecord':
-            echo json_encode(updateSalesRecord($getData, $crntUsr, $file));
+            echo json_encode(updateSalesRecord($getData, $crntUsr));
             break;
         case 'deleteSalesRecord':
             echo json_encode(deleteSalesRecord($getData, $crntUsr));
@@ -55,50 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-function moveFile() {
-    $targetDir = "../../uploads/proof-docs/";
-  
-    if (!file_exists($targetDir)) {
-      mkdir($targetDir, 0777, true);
-    }
-  
-    if ($_FILES['file']['error'] === UPLOAD_ERR_OK) {
-      $originalName = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
-      $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-  
-      $uniqueName = $originalName . '_' . uniqid() . '.' . $extension;
-      $targetFilePath = $targetDir . $uniqueName;
-  
-      if (move_uploaded_file($_FILES['file']['tmp_name'], $targetFilePath)) {
-        return [
-          'status' => 'success',
-          'filePath' => '/uploads/proof-docs/' . $uniqueName
-        ];
-      } else {
-        return [
-          'status' => 'error',
-          'message' => "Failed to move the uploaded file."
-        ];
-      }
-    } else {
-      return [
-        'status' => 'error',
-        'message' => "File upload error: " . $_FILES['file']['error']
-      ];
-    }
-}
-
-function createSalesRecord($data, $crntUsr, $file)
+function createSalesRecord($data, $crntUsr)
 {
     global $pdo;
-
-    $prof_doc = moveFile($file);
-
-    if ($prof_doc['status'] !== 'success') {
-        return [
-            'error' => $prof_doc['message']
-        ];
-    }
 
     $data = json_decode($data, true);
 
@@ -121,7 +66,6 @@ function createSalesRecord($data, $crntUsr, $file)
     $warnt_period = $data['warnt_period'];
     $salesperson_id = $data['salesperson_id'];
     $has_tickets = $data['has_tickets'];
-    $prof_doc = $prof_doc['filePath'];
     $sale_note = $data['sale_note'];
     $is_active = isset($data['is_active']) && $data['is_active'] ? 1 : 0;
     $created_by = $crntUsr;
@@ -129,13 +73,13 @@ function createSalesRecord($data, $crntUsr, $file)
     $stmt = $pdo->prepare("
         INSERT INTO sales_records (
             cust_id, prod_id, prod_uniq_no, bill_no, bill_date, warnt_period, 
-            salesperson_id, has_tickets, prof_doc, sale_note, is_active, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            salesperson_id, has_tickets, sale_note, is_active, created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     $stmt->execute([
         $cust_id, $prod_id, $prod_uniq_no, $bill_no, $bill_date, $warnt_period, 
-        $salesperson_id, $has_tickets, $prof_doc, $sale_note, $is_active, $created_by
+        $salesperson_id, $has_tickets, $sale_note, $is_active, $created_by
     ]);
 
     if ($stmt->rowCount()) {
@@ -144,8 +88,6 @@ function createSalesRecord($data, $crntUsr, $file)
         return ["error" => "Failed to create sales record"];
     }
 }
-
-
 
 function updateSalesRecord($data, $crntUsr)
 {
@@ -160,7 +102,6 @@ function updateSalesRecord($data, $crntUsr)
     $warnt_period = $data['warnt_period'] ?? '';
     $salesperson_id = $data['salesperson_id'] ?? '';
     $has_tickets = $data['has_tickets'] ?? '';
-    $prof_doc = $data['prof_doc'] ?? '';
     $sale_note = $data['sale_note'] ?? '';
     $is_active = isset($data['is_active']) && $data['is_active'] ? 1 : 0;
     $updated_by = $crntUsr ?? '';
@@ -178,9 +119,8 @@ function updateSalesRecord($data, $crntUsr)
             bill_no = ?, 
             bill_date = ?, 
             warnt_period = ?, 
-            salesperson_id = ?, 
+            salesperson_id = ?,
             has_tickets = ?, 
-            prof_doc = ?, 
             sale_note = ?, 
             is_active = ?, 
             updated_by = ?
@@ -196,7 +136,6 @@ function updateSalesRecord($data, $crntUsr)
         $warnt_period, 
         $salesperson_id, 
         $has_tickets, 
-        $prof_doc, 
         $sale_note, 
         $is_active, 
         $updated_by,
@@ -210,7 +149,6 @@ function updateSalesRecord($data, $crntUsr)
     }
 }
 
-
 function deleteSalesRecord($data, $crntUsr)
 {
     global $pdo;
@@ -221,19 +159,15 @@ function deleteSalesRecord($data, $crntUsr)
         return ["error" => "Sales record ID is required"];
     }
 
-    $stmt = $pdo->prepare("DELETE FROM sales_records WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE sales_records SET is_deleted = ? WHERE id = ?");
 
-    try {
-        $stmt->execute([$id]);
-    } catch (PDOException $e) {
-        return ["error" => $e->getMessage()];
-    }
+    $isDeleted = 1;
+    $stmt->execute([$isDeleted, $id]);
 
     if ($stmt->rowCount() > 0) {
         return ["message" => "Sales record deleted successfully"];
     } else {
-        $errorInfo = $stmt->errorInfo();
-        return ["error" => "Failed to delete sales record: " . $errorInfo[2]];
+        return ["error" => "Failed to delete sales record or sales record not found"];
     }
 }
 
@@ -324,17 +258,14 @@ function getASalesRecord($data)
     if (!$id) {
         return ["error" => "Sales record ID is required"];
     }
-
     $stmt = $pdo->prepare("SELECT * FROM sales_records WHERE id = ?");
     $stmt->execute([$id]);
 
     $salesRecord = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($salesRecord) {
-        return $salesRecord;
+        return ["data" => $salesRecord];
     } else {
         return ["error" => "Sales record not found"];
     }
 }
-
-?>
