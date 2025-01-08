@@ -39,6 +39,9 @@ if (!isset($payload['target'], $payload['data'], $payload['crntUsr'])) {
         case 'getATicket':
             echo json_encode(getATicket($getData));
             break;
+        case 'createTicketChatMessage':
+            echo json_encode(createTicketChatMessage($getData, $crntUsr));
+            break;
         default:
             return print("Invalid path...");
             break;
@@ -327,8 +330,11 @@ function getTicketChatMessages($data)
     }
 
     try {
-        $query = "SELECT tc.* 
+        $query = "SELECT tc.*, ud.usr_fname AS user_name, c.first_name AS customer_name
         FROM ticket_chats tc
+        LEFT JOIN usr_details ud ON tc.usr_id = ud.id
+        LEFT JOIN ticket_details td ON tc.ticket_id = td.id
+        LEFT JOIN customers c ON td.cust_id = c.id
         WHERE tc.ticket_id = :ticketId
         ORDER BY tc.id ASC";
 
@@ -358,4 +364,31 @@ function getTicketChatMessages($data)
         ];
     }
 }
+
+function createTicketChatMessage($data, $crntUsr)
+{
+    global $conn;
+
+    $ticketId = $data['ticketId'] ?? '';
+    $message = $data['message'] ?? '';
+
+    $stmt = $conn->prepare("
+        INSERT INTO ticket_chats (
+            ticket_id, message, is_cust, usr_id, created_by, is_active
+        ) VALUES (?, ?, 0, ?, ?, 1)
+    ");
+
+    $stmt->bind_param("isii", 
+        $ticketId, $message, $crntUsr, $crntUsr
+    );
+
+    $stmt->execute();
+
+    if ($stmt->affected_rows) {
+        return ["message" => "Chat message created successfully"];
+    } else {
+        return ["error" => "Failed to create chat message"];
+    }
+}
+
 ?>
