@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $method = $payload['target'];
     $getData = $payload['data'];
     $crntUsr = $payload['crntUsr'];
+    $usrRole = $payload['usrRole'];
 
     switch ($method) {
         case 'createTicket':
@@ -32,6 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             break;
         case 'getListOfAllTickets':
             echo json_encode(getListOfAllTickets($crntUsr));
+            break;
+        case 'getListOfCurrentUserAllTickets':
+            echo json_encode(getListOfCurrentUserAllTickets($crntUsr, $usrRole));
             break;
         case 'getTicketChatMessages':
             echo json_encode(getTicketChatMessages($getData));
@@ -182,7 +186,7 @@ function getListOfAllTickets($crntUsr)
 
             $filterQuery = '';
 
-            switch($adminRole) {
+            switch ($adminRole) {
                 case 'SuperAdmin':
                     $filterQuery = '';
                     break;
@@ -293,13 +297,44 @@ function getATicket($data)
 {
     global $pdo;
 
-    $id = $data['id'] ?? null;
+    $id = $data['ticket_id'] ?? null;
     if (!$id) {
         return ["error" => "Ticket ID is required"];
     }
+    $query = "SELECT 
+                td.*,
+                c.first_name,
+                c.last_name,
+                c.email,
+                c.mobile_no,
+                c.address,
+                c.pincode,
+                c.state,
+                sr.salesperson_id,
+                sr.bill_date,
+                sr.bill_no,
+                sr.prod_uniq_no,
+                sr.warnt_period,
+                p.p_name,
+                p.p_modal_no,
+                s.usr_fname
+            FROM 
+                ticket_details td
+            LEFT JOIN 
+                customers c ON td.cust_id = c.id
+            LEFT JOIN 
+                sales_records sr ON td.sales_id = sr.id
+            LEFT JOIN 
+                products p ON sr.prod_id = p.id
+            LEFT JOIN 
+                usr_details s ON td.salesperson_id = s.id
+            WHERE 
+                td.is_deleted = 0 AND td.id = :ticketId";
 
-    $stmt = $pdo->prepare("SELECT * FROM ticket_details WHERE id = ?");
-    $stmt->execute([$id]);
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':ticketId', $id);
+    $stmt->execute();
+
 
     $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($ticket) {
@@ -382,5 +417,229 @@ function createTicketChatMessage($data, $crntUsr)
         return ["message" => "Chat message created successfully"];
     } else {
         return ["error" => "Failed to create chat message"];
+    }
+}
+
+// function getListOfCurrentUserAllTickets($crntUsr, $adminRole)
+// {
+//     global $pdo;
+
+//     try {
+
+//         // $adminQuery = "SELECT * FROM usr_details WHERE id = '$adminId'";
+
+//         // $adminRole = $adminRow['usr_role'];
+//         // $adminRegion = $adminRow['region'];
+//         // $adminBranch = $adminRow['branch'];
+
+//         $query = "SELECT 
+//             td.*,
+//             c.first_name,
+//             c.last_name,
+//             c.email,
+//             c.mobile_no,
+//             sr.salesperson_id,
+//             p.p_name,
+//             s.usr_fname
+//           FROM 
+//             ticket_details td
+//           LEFT JOIN 
+//             customers c
+//           ON 
+//             td.cust_id = c.id
+//           LEFT JOIN 
+//             sales_records sr
+//           ON 
+//             td.sales_id = sr.id
+//           LEFT JOIN 
+//             products p
+//           ON 
+//             sr.prod_id = p.id
+//           LEFT JOIN 
+//             usr_details s
+//           ON 
+//             td.salesperson_id = s.id where td.is_deleted = 0";
+
+//         $filterQuery = '';
+
+//         switch ($adminRole) {
+//             case 'SuperAdmin':
+//                 $filterQuery = '';
+//                 break;
+//             case 'HeadOffice':
+//                 $filterQuery = '';
+//                 break;
+//             case 'GeneralManager':
+//                 $filterQuery = '';
+//                 break;
+//             case 'RegionAdmin':
+//                 $filterQuery = '';
+//                 break;
+//             case 'BranchAdmin':
+//                 $filterQuery = '';
+//                 break;
+//             case 'SalesPerson':
+//                 $filterQuery = " AND td.assigned_to = :currentUserId";
+//                 break;
+//             default:
+//                 $filterQuery = '';
+//                 break;
+//         }
+//         $query .= $filterQuery;
+//         $stmt = $pdo->prepare($query);
+//         $stmt->bindValue(':currentUserId', $crntUsr, PDO::PARAM_INT);
+
+//         $stmt->execute();
+
+//         // Fetch results
+//         $tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+//         $rowCount = $stmt->rowCount(); // Get the number of rows returned
+
+
+//         if ($tickets) {
+//             return [
+//                 'data' => $tickets,
+//                 'totalCount' => $rowCount,
+//             ];
+//         } else {
+//             return [
+//                 'error' => "No records found",
+//             ];
+//         }
+//     } catch (PDOException $e) {
+//         return [
+//             'error' => true,
+//             'message' => 'Error fetching sales records: ' . $e->getMessage(),
+//         ];
+//     }
+// }
+
+
+function getListOfCurrentUserAllTickets($crntUsr, $adminRole)
+{
+    global $pdo;
+
+
+    try {
+        $stmt1 = $pdo->prepare("SELECT u.*, b.b_name, r.r_name, ch.c_name, m.m_name 
+          FROM usr_details u 
+          LEFT JOIN 
+            branch_details b ON u.branch = b.b_name
+          LEFT JOIN
+            region_details r ON b.region_id = r.id
+          LEFT JOIN
+            cho_details ch ON r.cho_id = ch.id
+          LEFT JOIN
+            management_details m ON ch.management_id = m.id
+          WHERE u.id = :id");
+
+        $stmt1->execute(['id' => (int)$crntUsr]);
+        $usr_dtls = $stmt1->fetch(PDO::FETCH_ASSOC);
+
+        if ($usr_dtls) {
+            $usr_role = $usr_dtls['usr_role'];
+            $usr_branch = $usr_dtls['b_name'];
+            $usr_region = $usr_dtls['r_name'];
+            $usr_cho = $usr_dtls['c_name'];
+            $usr_management = $usr_dtls['m_name'];
+        } else {
+            // Handle case where user details are not found
+            echo "User not found.";
+        }
+        $query = "SELECT 
+            td.*,
+            c.first_name,
+            c.last_name,
+            c.email,
+            c.mobile_no,
+            sr.salesperson_id,
+            p.p_name,
+            s.usr_fname,
+            b.b_name,
+            r.r_name,
+            ch.c_name,
+            m.m_name
+          FROM 
+            ticket_details td
+          LEFT JOIN 
+            customers c ON td.cust_id = c.id
+          LEFT JOIN 
+            sales_records sr ON td.sales_id = sr.id
+          LEFT JOIN 
+            products p ON sr.prod_id = p.id
+          LEFT JOIN 
+            usr_details s ON td.assigned_to = s.id
+          LEFT JOIN 
+            branch_details b ON s.branch = b.b_name
+          LEFT JOIN
+            region_details r ON b.region_id = r.id
+          LEFT JOIN
+            cho_details ch ON r.cho_id = ch.id
+          LEFT JOIN
+            management_details m ON ch.management_id = m.id
+          WHERE 
+            td.is_deleted = 0";
+
+        $filterQuery = '';
+
+        switch ($adminRole) {
+            case 'SuperAdmin':
+                $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "SuperAdmin" AND m.m_name = :management';
+                break;
+            case 'HeadOffice':
+                $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "HeadOffice" AND ch.c_name = :cho';
+                break;
+            // case 'GeneralManager':
+            //     $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "GeneralManager"';
+            //     break;
+            case 'RegionAdmin':
+                $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "RegionAdmin" AND r.r_name = :region';
+                break;
+            case 'BranchAdmin':
+                $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "BranchAdmin" AND b.b_name = :branch';
+                break;
+            case 'SalesPerson':
+                $filterQuery = " AND td.assigned_to = :currentUserId";
+                break;
+            default:
+                $filterQuery = '';
+                break;
+        }
+
+        $query .= $filterQuery;
+        $stmt = $pdo->prepare($query);
+
+        if ($usr_role === 'SalesPerson') {
+            $stmt->bindValue(':currentUserId', (int)$crntUsr, PDO::PARAM_INT);
+        }
+        if ($usr_role === 'BranchAdmin') {
+            $stmt->bindValue(':branch', $usr_branch, PDO::PARAM_INT);
+        }
+        if ($usr_role === 'RegionAdmin') {
+            $stmt->bindValue(':region', $usr_region, PDO::PARAM_INT);
+        }
+        if ($usr_role === 'HeadOffice') {
+            $stmt->bindValue(':cho', $usr_cho, PDO::PARAM_INT);
+        }
+        // if ($$usr_role === 'GeneralManager') {
+        //     $stmt->bindValue(':management', $usr_management, PDO::PARAM_INT);
+        // }
+        if ($usr_role === 'SuperAdmin') {
+            $stmt->bindValue(':management', $usr_management, PDO::PARAM_INT);
+        }
+
+        $stmt->execute();
+        $tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rowCount = $stmt->rowCount();
+
+        return [
+            'data' => $tickets,
+            'totalCount' => $rowCount,
+        ];
+    } catch (PDOException $e) {
+        return [
+            'error' => true,
+            'message' => 'Error fetching ticket details: ' . $e->getMessage(),
+        ];
     }
 }
