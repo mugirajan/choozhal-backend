@@ -57,38 +57,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 
-function moveFile() {
+function moveFile()
+{
     $targetDir = "../../uploads/profile-pic/";
-  
+
     if (!file_exists($targetDir)) {
-      mkdir($targetDir, 0777, true);
+        mkdir($targetDir, 0777, true);
     }
-  
+
     if ($_FILES['file']['error'] === UPLOAD_ERR_OK) {
-      $originalName = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
-      $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-  
-      $uniqueName = $originalName . '_' . uniqid() . '.' . $extension;
-      $targetFilePath = $targetDir . $uniqueName;
-  
-      if (move_uploaded_file($_FILES['file']['tmp_name'], $targetFilePath)) {
-        return [
-          'status' => 'success',
-          'filePath' => '/uploads/profile-pic/' . $uniqueName
-        ];
-      } else {
-        return [
-          'status' => 'error',
-          'message' => "Failed to move the uploaded file."
-        ];
-      }
+        $originalName = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
+        $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+
+        $uniqueName = $originalName . '_' . uniqid() . '.' . $extension;
+        $targetFilePath = $targetDir . $uniqueName;
+
+        if (move_uploaded_file($_FILES['file']['tmp_name'], $targetFilePath)) {
+            return [
+                'status' => 'success',
+                'filePath' => '/uploads/profile-pic/' . $uniqueName
+            ];
+        } else {
+            return [
+                'status' => 'error',
+                'message' => "Failed to move the uploaded file."
+            ];
+        }
     } else {
-      return [
-        'status' => 'error',
-        'message' => "File upload error: " . $_FILES['file']['error']
-      ];
+        return [
+            'status' => 'error',
+            'message' => "File upload error: " . $_FILES['file']['error']
+        ];
     }
-  }
+}
 
 function createCustomerDetails($data, $crntUsr, $file)
 {
@@ -259,7 +260,7 @@ function deleteCustomerdetails($data, $crntUsr)
 }
 
 
-function getListOfAllCustomers($crntUsr)
+function getListOfCurrentUserCustomers($crntUsr)
 {
     global $pdo;
 
@@ -271,46 +272,45 @@ function getListOfAllCustomers($crntUsr)
         $adminStmt->execute(['adminId' => $adminId]);
         $adminRow = $adminStmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($adminRow) {
-            $adminRole = $adminRow['usr_role'];
-            $adminArea = $adminRow['area']; 
-
-            $filterQuery = '';
-
-            if ($adminRole == 'SuperAdmin') {
-                $filterQuery = '';
-            } elseif ($adminRole == 'HeadOffice') {
-                $filterQuery = '';
-            } elseif ($adminRole == 'GeneralManager') {
-                $filterQuery = '';
-            } if ($adminRole == 'RegionAdmin') {
-                // ...
-                $filterQuery = "WHERE sr.salesperson_id IN ($allIdsString)";
-            } elseif ($adminRole == 'BranchAdmin') {
-                $filterQuery = "WHERE sr.salesperson_id IN (SELECT id FROM usr_details WHERE branch = '$adminBranch')";
-            } elseif ($adminRole == 'SalesPerson') {
-                $filterQuery = "WHERE sr.salesperson_id = '$adminId'";
-            } else {
-                $filterQuery = "WHERE sr.salesperson_id = '$adminId'";
-            }
-
-            $query = "
-            SELECT 
-                c.*,
-                sr.salesperson_id,
-                ud.usr_fname AS salesperson_name
+        $query = "
+            SELECT *   
             FROM 
                 customers c
             JOIN 
                 sales_records sr
             ON 
                 c.id = sr.cust_id
-            JOIN 
-                usr_details ud
-            ON 
-                sr.salesperson_id = ud.id
-            $filterQuery
+            
         ";
+
+        if ($adminRow) {
+            $adminRole = $adminRow['usr_role'];
+            $adminArea = $adminRow['area'];
+
+            $filterQuery = '';
+
+            switch ($adminRole) {
+                case 'SuperAdmin': {
+                        break;
+                    }
+                case 'HeadOffice': {
+                        break;
+                    }
+                case 'GeneralManager': {
+                        break;
+                    }
+                case 'GeneralManager': {
+                        break;
+                    }
+                case 'BranchAdmin': {
+                        break;
+                    }
+                case 'SalesPerson': {
+                        $filterQuery = "WHERE sr.salesperson_id = '$adminId'";
+                        break;
+                    }
+            }
+
 
             $stmt = $pdo->prepare($query);
             $stmt->execute();
@@ -326,6 +326,35 @@ function getListOfAllCustomers($crntUsr)
                 'error' => "Invalid admin ID.",
             ];
         }
+    } catch (PDOException $e) {
+        return [
+            'error' => true,
+            'message' => 'Error fetching customers: ' . $e->getMessage(),
+        ];
+    }
+}
+
+function getListOfAllCustomers($crntUsr)
+{
+    global $pdo;
+
+    try {
+        $adminId = $crntUsr;
+
+
+        $query = "
+            SELECT *  FROM customers";
+
+
+        $stmt = $pdo->prepare($query);
+        $stmt->execute();
+
+        $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            'data' => $customers,
+            'totalCount' => count($customers),
+        ];
     } catch (PDOException $e) {
         return [
             'error' => true,
