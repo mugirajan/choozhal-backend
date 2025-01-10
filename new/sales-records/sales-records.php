@@ -153,29 +153,72 @@ if ($stmt->affected_rows) {
     return ["error" => "Failed to delete Sales Record or Sales Record not found"];
 }
 }
+
 function getListOfAllSalesRecords($crntUsr)
 {
-global $conn;
-try {
-    $stmt = $conn->prepare("SELECT * FROM sales_records WHERE is_deleted = ?");
-    $stmt->bind_param("i", $isDeleted);
-    $isDeleted = 0;
-    $stmt->execute();
+    global $pdo;
 
-    $result = $stmt->get_result();
-    $salesRecords = $result->fetch_all(MYSQLI_ASSOC);
+    try {
+        $adminId = $crntUsr;
 
-    return [
-        'data' => $salesRecords,
-        'totalCount' => count($salesRecords),
-    ];
-} catch (Exception $e) {
-    return [
-        'error' => true,
-        'message' => 'Error fetching Sales Records: ' . $e->getMessage(),
-    ];
+        $adminQuery = "SELECT * FROM usr_details WHERE id = :adminId";
+        $adminStmt = $pdo->prepare($adminQuery);
+        $adminStmt->execute(['adminId' => $adminId]);
+        $adminRow = $adminStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($adminRow) {
+            $adminRole = $adminRow['usr_role'];
+            $adminArea = $adminRow['area']; 
+
+            $filterQuery = '';
+
+            if ($adminRole == 'SuperAdmin') {
+                $filterQuery = '';
+            } elseif ($adminRole == 'HeadOffice') {
+                $filterQuery = '';
+            } elseif ($adminRole == 'GeneralManager') {
+                $filterQuery = '';
+            } elseif ($adminRole == 'RegionAdmin') {
+                // ...
+                $filterQuery = "WHERE salesperson_id IN ($allIdsString)";
+            } elseif ($adminRole == 'BranchAdmin') {
+                $filterQuery = "WHERE salesperson_id IN (SELECT id FROM usr_details WHERE branch = '$adminBranch')";
+            } elseif ($adminRole == 'SalesPerson') {
+                $filterQuery = "WHERE salesperson_id = '$adminId'";
+            } else {
+                $filterQuery = "WHERE salesperson_id = '$adminId'";
+            }
+
+            $query = "
+                SELECT 
+                    *
+                FROM 
+                    sales_records
+                $filterQuery
+            ";
+
+            $stmt = $pdo->prepare($query);
+            $stmt->execute();
+
+            $salesRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return [
+                'data' => $salesRecords,
+                'totalCount' => count($salesRecords),
+            ];
+        } else {
+            return [
+                'error' => "Invalid admin ID.",
+            ];
+        }
+    } catch (PDOException $e) {
+        return [
+            'error' => true,
+            'message' => 'Error fetching sales records: ' . $e->getMessage(),
+        ];
+    }
 }
-}
+
 function getASalesRecord($data)
 {
 global $conn;

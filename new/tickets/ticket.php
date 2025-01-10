@@ -189,44 +189,11 @@ function getListOfAllTickets($crntUsr)
             } elseif ($adminRole == 'GeneralManager') {
                 $filterQuery = '';
             } elseif ($adminRole == 'RegionAdmin') {
-                $branchAdminsQuery = "SELECT id FROM usr_details WHERE region = '$adminRegion' AND role = 'BranchAdmin'";
-                $branchAdminsResult = $pdo->query($branchAdminsQuery);
-
-                $branchAdminIds = [];
-                if ($branchAdminsResult && $branchAdminsResult->rowCount() > 0) {
-                    while ($branchAdmin = $branchAdminsResult->fetch(PDO::FETCH_ASSOC)) {
-                        $branchAdminIds[] = $branchAdmin['id'];
-                    }
-                }
-
-                $salesPersonsQuery = "SELECT id FROM usr_details WHERE branch IN (
-                                            SELECT branch FROM usr_details WHERE id IN (" . implode(',', $branchAdminIds) . ") AND role = 'BranchAdmin'
-                                        ) AND role = 'SalesPerson'";
-                $salesPersonsResult = $pdo->query($salesPersonsQuery);
-
-                $salesPersonIds = [];
-                if ($salesPersonsResult && $salesPersonsResult->rowCount() > 0) {
-                    while ($salesPerson = $salesPersonsResult->fetch(PDO::FETCH_ASSOC)) {
-                        $salesPersonIds[] = $salesPerson['id'];
-                    }
-                }
-
-                $allIds = array_merge($branchAdminIds, $salesPersonIds);
-                $allIdsString = implode(',', array_map('intval', $allIds));
-
-                if (!empty($allIdsString)) {
-                    $filterQuery = "WHERE u.sales_person_id IN ($allIdsString)";
-                } else {
-                    $filterQuery = "WHERE 1=0"; 
-                }
+                $filterQuery = "";
             } elseif ($adminRole == 'BranchAdmin') {
-                $filterQuery = "WHERE u.sales_person_id IN (
-                                    SELECT id FROM usr_details WHERE branch = (
-                                        SELECT branch FROM usr_details WHERE id = '$adminId'
-                                    )
-                                )";
+                $filterQuery = "";
             } elseif ($adminRole == 'SalesPerson') {
-                $filterQuery = "WHERE u.sales_person_id = '$adminId'";
+                $filterQuery = "WHERE td.salesperson_id = '$adminId'";
             }
 
             $query = "SELECT 

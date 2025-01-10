@@ -2,10 +2,6 @@
 
 require_once '../../db.php';
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header('Content-Type: application/json');
 
 $rawInput = file_get_contents("php://input");
 $data = json_decode($rawInput, true);
@@ -58,12 +54,14 @@ function createBranch($data, $crntUsr) {
 
     $stmt = $conn->prepare("
         INSERT INTO branch_details (
-            b_name, b_phone, b_email, b_addrs, pin, region_id, b_owner_usr_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            b_name, b_phone, b_email, b_addrs, pin, region_id, b_owner_usr_id, is_deleted, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
-    $stmt->bind_param("sssssss", 
-        $b_name, $b_phone, $b_email, $b_addrs, $pin, $region_id, $b_owner_usr_id
+    $isDeleted = 0;
+    $is_active = 1;
+    $stmt->bind_param("sssssssis", 
+        $b_name, $b_phone, $b_email, $b_addrs, $pin, $region_id, $b_owner_usr_id, $isDeleted, $is_active
     );
 
     $stmt->execute();

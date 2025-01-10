@@ -2,10 +2,6 @@
 
 require_once '../../db.php';
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header('Content-Type: application/json');
 
 $rawInput = file_get_contents("php://input");
 $data = json_decode($rawInput, true);
@@ -56,18 +52,17 @@ function createCHO($data, $crntUsr)
     $pin = $data['pin'] ?? '';
     $cho_owner_usr_id = $data['cho_owner_usr_id'] ?? '';
 
-    // SQL query with placeholders
     $stmt = $conn->prepare("
         INSERT INTO cho_details (
-            id, c_name, c_phone, c_email, c_addrs, pin, cho_owner_usr_id, is_deleted
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            id, c_name, c_phone, c_email, c_addrs, pin, cho_owner_usr_id, is_deleted, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
-    // Bind values to the prepared statement
-    $id = uniqid(); // Generate a unique ID
+    $id = uniqid();
     $isDeleted = 0;
-    $stmt->bind_param("sssssssi", 
-        $id, $c_name, $c_phone, $c_email, $c_addrs, $pin, $cho_owner_usr_id, $isDeleted
+    $is_active = 1;
+    $stmt->bind_param("ssssssssi", 
+        $id, $c_name, $c_phone, $c_email, $c_addrs, $pin, $cho_owner_usr_id, $isDeleted, $is_active
     );
 
     // Execute query

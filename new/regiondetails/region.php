@@ -59,12 +59,14 @@ function createRegion($data, $crntUsr)
 
     $stmt = $conn->prepare("
         INSERT INTO region_details (
-            r_name, r_phone, r_email, r_addrs, pin, cho_id, r_owner_usr_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            r_name, r_phone, r_email, r_addrs, pin, cho_id, r_owner_usr_id, is_deleted, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
-    $stmt->bind_param("ssssssi", 
-        $r_name, $r_phone, $r_email, $r_addrs, $pin, $cho_id, $r_owner_usr_id
+    $isDeleted = 0;
+    $is_active = 1;
+    $stmt->bind_param("ssssssiss", 
+        $r_name, $r_phone, $r_email, $r_addrs, $pin, $cho_id, $r_owner_usr_id, $isDeleted, $is_active
     );
 
     $stmt->execute();

@@ -58,14 +58,15 @@ function createManagement($data, $crntUsr)
 
     $stmt = $conn->prepare("
         INSERT INTO management_details (
-            id, m_name, m_phone, m_email, m_addrs, pin, m_owner_usr_id, is_deleted
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            id, m_name, m_phone, m_email, m_addrs, pin, m_owner_usr_id, is_deleted, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     $id = uniqid();
     $isDeleted = 0;
-    $stmt->bind_param("sssssssi", 
-        $id, $m_name, $m_phone, $m_email, $m_addrs, $pin, $m_owner_usr_id, $isDeleted
+    $is_active = 1;
+    $stmt->bind_param("sssssssis", 
+        $id, $m_name, $m_phone, $m_email, $m_addrs, $pin, $m_owner_usr_id, $isDeleted, $is_active
     );
 
     $stmt->execute();

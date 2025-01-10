@@ -258,44 +258,78 @@ function deleteCustomerdetails($data, $crntUsr)
     }
 }
 
-function getListOfAllCustomers(int $crntUsr): array
+
+function getListOfAllCustomers($crntUsr)
 {
     global $pdo;
 
     try {
-        $stmt = $pdo->query("SELECT * FROM customers WHERE is_deleted = false");
-        $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $adminId = $crntUsr;
 
-        $customerList = array_map(function ($values) {
+        $adminQuery = "SELECT * FROM usr_details WHERE id = :adminId";
+        $adminStmt = $pdo->prepare($adminQuery);
+        $adminStmt->execute(['adminId' => $adminId]);
+        $adminRow = $adminStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($adminRow) {
+            $adminRole = $adminRow['usr_role'];
+            $adminArea = $adminRow['area']; 
+
+            $filterQuery = '';
+
+            if ($adminRole == 'SuperAdmin') {
+                $filterQuery = '';
+            } elseif ($adminRole == 'HeadOffice') {
+                $filterQuery = '';
+            } elseif ($adminRole == 'GeneralManager') {
+                $filterQuery = '';
+            } if ($adminRole == 'RegionAdmin') {
+                // ...
+                $filterQuery = "WHERE sr.salesperson_id IN ($allIdsString)";
+            } elseif ($adminRole == 'BranchAdmin') {
+                $filterQuery = "WHERE sr.salesperson_id IN (SELECT id FROM usr_details WHERE branch = '$adminBranch')";
+            } elseif ($adminRole == 'SalesPerson') {
+                $filterQuery = "WHERE sr.salesperson_id = '$adminId'";
+            } else {
+                $filterQuery = "WHERE sr.salesperson_id = '$adminId'";
+            }
+
+            $query = "
+            SELECT 
+                c.*,
+                sr.salesperson_id,
+                ud.usr_fname AS salesperson_name
+            FROM 
+                customers c
+            JOIN 
+                sales_records sr
+            ON 
+                c.id = sr.cust_id
+            JOIN 
+                usr_details ud
+            ON 
+                sr.salesperson_id = ud.id
+            $filterQuery
+        ";
+
+            $stmt = $pdo->prepare($query);
+            $stmt->execute();
+
+            $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
             return [
-                'id' => $values['id'],
-                'first_name' => $values['first_name'],
-                'last_name' => $values['last_name'],
-                'email' => $values['email'],
-                'mobile_no' => $values['mobile_no'],
-                'dob' => $values['dob'],
-                'gender' => $values['gender'],
-                'profilePic' => $values['profile_pic'],
-                'address' => $values['address'],
-                'area' => $values['area'],
-                'city' => $values['city'],
-                'district' => $values['district'],
-                'state' => $values['state'],
-                'pincode' => $values['pincode'],
-                'isActive' => (bool)$values['is_active'],
-                'createdDate' => $values['created_at']
+                'data' => $customers,
+                'totalCount' => count($customers),
             ];
-        }, $customers);
-
-        return [
-            'data' => $customerList,
-            'totalCount' => count($customerList),
-        ];
+        } else {
+            return [
+                'error' => "Invalid admin ID.",
+            ];
+        }
     } catch (PDOException $e) {
-        error_log('Error fetching customer data: ' . $e->getMessage());
         return [
             'error' => true,
-            'message' => 'Error fetching customer data: ' . $e->getMessage(),
+            'message' => 'Error fetching customers: ' . $e->getMessage(),
         ];
     }
 }
