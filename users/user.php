@@ -104,7 +104,7 @@ function getListOfAllUsers($adminId)
 
         // Fetch users details
         $query = "
-            SELECT * FROM usr_details $filterQuery";
+            SELECT * FROM usr_details $filterQuery  is_deleted = 0";
 
         error_log("Final users query: $query");
         $stmt = $conn->prepare($query);
@@ -264,7 +264,7 @@ function deleteUserDetails($data, $crntUsr)
     }
 
     // SQL query with placeholders
-    $stmt = $conn->prepare("DELETE FROM usr_details WHERE id = ?");
+    $stmt = $conn->prepare("UPDATE usr_details SET is_deleted = 1 WHERE id = ?");
 
     // Bind values
     $stmt->bind_param("i", $id);

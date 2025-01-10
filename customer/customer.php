@@ -248,7 +248,7 @@ function deleteCustomerdetails($data, $crntUsr)
         return ["error" => "Customer ID is required"];
     }
 
-    $stmt = $pdo->prepare("DELETE FROM customers WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE customers SET is_deleted = ? WHERE id = ?");
     $stmt->execute([true, $crntUsr, $id]);
 
     if ($stmt->rowCount()) {
