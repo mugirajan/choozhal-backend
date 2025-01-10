@@ -39,6 +39,9 @@ if (!isset($payload['target'], $payload['data'], $payload['crntUsr'])) {
         case 'getATicket':
             echo json_encode(getATicket($getData));
             break;
+        case 'createTicketChatMessage':
+            echo json_encode(createTicketChatMessage($getData, $crntUsr));
+            break;
         default:
             return print("Invalid path...");
             break;
@@ -186,44 +189,11 @@ function getListOfAllTickets($crntUsr)
             } elseif ($adminRole == 'GeneralManager') {
                 $filterQuery = '';
             } elseif ($adminRole == 'RegionAdmin') {
-                $branchAdminsQuery = "SELECT id FROM usr_details WHERE region = '$adminRegion' AND role = 'BranchAdmin'";
-                $branchAdminsResult = $pdo->query($branchAdminsQuery);
-
-                $branchAdminIds = [];
-                if ($branchAdminsResult && $branchAdminsResult->rowCount() > 0) {
-                    while ($branchAdmin = $branchAdminsResult->fetch(PDO::FETCH_ASSOC)) {
-                        $branchAdminIds[] = $branchAdmin['id'];
-                    }
-                }
-
-                $salesPersonsQuery = "SELECT id FROM usr_details WHERE branch IN (
-                                            SELECT branch FROM usr_details WHERE id IN (" . implode(',', $branchAdminIds) . ") AND role = 'BranchAdmin'
-                                        ) AND role = 'SalesPerson'";
-                $salesPersonsResult = $pdo->query($salesPersonsQuery);
-
-                $salesPersonIds = [];
-                if ($salesPersonsResult && $salesPersonsResult->rowCount() > 0) {
-                    while ($salesPerson = $salesPersonsResult->fetch(PDO::FETCH_ASSOC)) {
-                        $salesPersonIds[] = $salesPerson['id'];
-                    }
-                }
-
-                $allIds = array_merge($branchAdminIds, $salesPersonIds);
-                $allIdsString = implode(',', array_map('intval', $allIds));
-
-                if (!empty($allIdsString)) {
-                    $filterQuery = "WHERE u.sales_person_id IN ($allIdsString)";
-                } else {
-                    $filterQuery = "WHERE 1=0"; 
-                }
+                $filterQuery = "";
             } elseif ($adminRole == 'BranchAdmin') {
-                $filterQuery = "WHERE u.sales_person_id IN (
-                                    SELECT id FROM usr_details WHERE branch = (
-                                        SELECT branch FROM usr_details WHERE id = '$adminId'
-                                    )
-                                )";
+                $filterQuery = "";
             } elseif ($adminRole == 'SalesPerson') {
-                $filterQuery = "WHERE u.sales_person_id = '$adminId'";
+                $filterQuery = "WHERE td.salesperson_id = '$adminId'";
             }
 
             $query = "SELECT 
@@ -327,9 +297,12 @@ function getTicketChatMessages($data)
     }
 
     try {
-        $query = "SELECT tc.* 
+        $query = "SELECT tc.*, ud.usr_fname AS user_name, c.first_name AS customer_name
         FROM ticket_chats tc
-        WHERE tc.ticket_id = (SELECT uniq_id FROM ticket_details WHERE id = :ticketId)
+        LEFT JOIN usr_details ud ON tc.usr_id = ud.id
+        LEFT JOIN ticket_details td ON tc.ticket_id = td.id
+        LEFT JOIN customers c ON td.cust_id = c.id
+        WHERE tc.ticket_id = :ticketId
         ORDER BY tc.id ASC";
 
         $stmt = $pdo->prepare($query);
@@ -358,4 +331,31 @@ function getTicketChatMessages($data)
         ];
     }
 }
+
+function createTicketChatMessage($data, $crntUsr)
+{
+    global $conn;
+
+    $ticketId = $data['ticketId'] ?? '';
+    $message = $data['message'] ?? '';
+
+    $stmt = $conn->prepare("
+        INSERT INTO ticket_chats (
+            ticket_id, message, is_cust, usr_id, created_by, is_active
+        ) VALUES (?, ?, 0, ?, ?, 1)
+    ");
+
+    $stmt->bind_param("isii", 
+        $ticketId, $message, $crntUsr, $crntUsr
+    );
+
+    $stmt->execute();
+
+    if ($stmt->affected_rows) {
+        return ["message" => "Chat message created successfully"];
+    } else {
+        return ["error" => "Failed to create chat message"];
+    }
+}
+
 ?>

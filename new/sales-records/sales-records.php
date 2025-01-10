@@ -1,12 +1,16 @@
 <?php
 
-require_once "../../db.php";
+require_once '../../db.php';
+
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header('Content-Type: application/json');
 
 $rawInput = file_get_contents("php://input");
 $data = json_decode($rawInput, true);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-
     if (!isset($data['target'], $data['data'], $data['crntUsr'])) {
         echo json_encode([
             "success" => false,
@@ -18,27 +22,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $method = $data['target'];
     $getData = $data['data'];
     $crntUsr = $data['crntUsr'];
-    $file = '';
-
-    if ($method == 'createSalesRecord' || $method == 'updateSalesRecord') {
-
-        if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-            $file = $_FILES['file'];
-        } else {
-            echo json_encode([
-                "success" => false,
-                "error" => "Proof Document is not available or upload failed."
-            ]);
-            exit;
-        }
-    }
 
     switch ($method) {
         case 'createSalesRecord':
-            echo json_encode(createSalesRecord($getData, $crntUsr, $file));
+            echo json_encode(createSalesRecord($getData, $crntUsr));
             break;
         case 'updateSalesRecord':
-            echo json_encode(updateSalesRecord($getData, $crntUsr, $file));
+            echo json_encode(updateSalesRecord($getData));
             break;
         case 'deleteSalesRecord':
             echo json_encode(deleteSalesRecord($getData, $crntUsr));
@@ -55,200 +45,130 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-function moveFile() {
-    $targetDir = "../../uploads/proof-docs/";
-  
-    if (!file_exists($targetDir)) {
-      mkdir($targetDir, 0777, true);
-    }
-  
-    if ($_FILES['file']['error'] === UPLOAD_ERR_OK) {
-      $originalName = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
-      $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-  
-      $uniqueName = $originalName . '_' . uniqid() . '.' . $extension;
-      $targetFilePath = $targetDir . $uniqueName;
-  
-      if (move_uploaded_file($_FILES['file']['tmp_name'], $targetFilePath)) {
-        return [
-          'status' => 'success',
-          'filePath' => '/uploads/proof-docs/' . $uniqueName
-        ];
-      } else {
-        return [
-          'status' => 'error',
-          'message' => "Failed to move the uploaded file."
-        ];
-      }
-    } else {
-      return [
-        'status' => 'error',
-        'message' => "File upload error: " . $_FILES['file']['error']
-      ];
-    }
-}
 
-function createSalesRecord($data, $crntUsr, $file)
-{
-    global $pdo;
+function createSalesRecord($data, $crntUsr){
+    global $conn;
 
-    $prof_doc = moveFile($file);
-
-    if ($prof_doc['status'] !== 'success') {
-        return [
-            'error' => $prof_doc['message']
-        ];
-    }
-
-    $data = json_decode($data, true);
-
-    // Validate input data
-    $requiredFields = ['cust_id', 'prod_id', 'prod_uniq_no', 'bill_no', 'bill_date', 'warnt_period', 
-                         'salesperson_id', 'has_tickets', 'sale_note'];
-    foreach ($requiredFields as $field) {
-        if (!isset($data[$field])) {
-            return [
-                'error' => "Missing required field: $field"
-            ];
-        }
-    }
-
-    $cust_id = $data['cust_id'];
-    $prod_id = $data['prod_id'];
-    $prod_uniq_no = $data['prod_uniq_no'];
-    $bill_no = $data['bill_no'];
-    $bill_date = $data['bill_date'];
-    $warnt_period = $data['warnt_period'];
-    $salesperson_id = $data['salesperson_id'];
-    $has_tickets = $data['has_tickets'];
-    $prof_doc = $prof_doc['filePath'];
-    $sale_note = $data['sale_note'];
-    $is_active = isset($data['is_active']) && $data['is_active'] ? 1 : 0;
-    $created_by = $crntUsr;
-
-    $stmt = $pdo->prepare("
-        INSERT INTO sales_records (
-            cust_id, prod_id, prod_uniq_no, bill_no, bill_date, warnt_period, 
-            salesperson_id, has_tickets, prof_doc, sale_note, is_active, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ");
-
-    $stmt->execute([
-        $cust_id, $prod_id, $prod_uniq_no, $bill_no, $bill_date, $warnt_period, 
-        $salesperson_id, $has_tickets, $prof_doc, $sale_note, $is_active, $created_by
-    ]);
-
-    if ($stmt->rowCount()) {
-        return ["message" => "Sales record created successfully"];
-    } else {
-        return ["error" => "Failed to create sales record"];
-    }
-}
-
-
-
-function updateSalesRecord($data, $crntUsr)
-{
-    global $pdo;
-
-    $id = $data['id'] ?? null;
     $cust_id = $data['cust_id'] ?? '';
     $prod_id = $data['prod_id'] ?? '';
     $prod_uniq_no = $data['prod_uniq_no'] ?? '';
     $bill_no = $data['bill_no'] ?? '';
-    $bill_date = $data['bill_date'] ?? '';
     $warnt_period = $data['warnt_period'] ?? '';
-    $salesperson_id = $data['salesperson_id'] ?? '';
-    $has_tickets = $data['has_tickets'] ?? '';
-    $prof_doc = $data['prof_doc'] ?? '';
     $sale_note = $data['sale_note'] ?? '';
-    $is_active = isset($data['is_active']) && $data['is_active'] ? 1 : 0;
-    $updated_by = $crntUsr ?? '';
 
-    if (!$id) {
-        return ["error" => "Sales record ID is required"];
-    }
-
-    $stmt = $pdo->prepare("
-        UPDATE sales_records 
-        SET 
-            cust_id = ?, 
-            prod_id = ?, 
-            prod_uniq_no = ?, 
-            bill_no = ?, 
-            bill_date = ?, 
-            warnt_period = ?, 
-            salesperson_id = ?, 
-            has_tickets = ?, 
-            prof_doc = ?, 
-            sale_note = ?, 
-            is_active = ?, 
-            updated_by = ?
-        WHERE id = ?
+    $stmt = $conn->prepare("
+        INSERT INTO sales_records (
+            cust_id, prod_id, prod_uniq_no, bill_no, bill_date, warnt_period, salesperson_id, sale_note, created_by, updated_by, is_deleted
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
-    $stmt->execute([
-        $cust_id, 
-        $prod_id, 
-        $prod_uniq_no, 
-        $bill_no, 
-        $bill_date, 
-        $warnt_period, 
-        $salesperson_id, 
-        $has_tickets, 
-        $prof_doc, 
-        $sale_note, 
-        $is_active, 
-        $updated_by,
-        $id
-    ]);
+    if (!$stmt) {
+        die("Prepare failed: (" . $conn->errno . ") " . $conn->error);
+    }
 
-    if ($stmt->rowCount()) {
-        return ["message" => "Sales record updated successfully"];
+    $isDeleted = 0;
+    $billDate = date('Y-m-d');
+    $profDoc = 0; 
+    $salesperson_id = $crntUsr;
+
+    $stmt->bind_param("sssssssssss", 
+    $cust_id, $prod_id, $prod_uniq_no, $bill_no, $billDate, $warnt_period, $salesperson_id, $sale_note, $crntUsr, $crntUsr, $isDeleted
+);
+
+    $stmt->execute();
+
+    if ($stmt->affected_rows) {
+        return ["message" => "Sales Record created successfully"];
     } else {
-        return ["error" => "Failed to update sales record or no changes made"];
+        return ["error" => "Failed to create Sales Record"];
     }
 }
 
+function updateSalesRecord($data)
+{
+    global $conn;
+
+    // Required fields
+    $id = $data['id'] ?? null;
+    if (!$id) {
+        return ["error" => "Sales Record ID is required"];
+    }
+
+    // Optional fields
+    $cust_id = $data['cust_id'] ?? '';
+    $prod_id = $data['prod_id'] ?? '';
+    $prod_uniq_no = $data['prod_uniq_no'] ?? '';
+    $bill_no = $data['bill_no'] ?? '';
+    $warnt_period = $data['warnt_period'] ?? '';
+    $salesperson_id = $data['salesperson_id'] ?? '';
+    $sale_note = $data['sale_note'] ?? '';
+    $updated_by = $data['updated_by'] ?? '';
+
+    // Prepare SQL query
+    $bill_date = $data['bill_date'] ?? date('Y-m-d');
+    $updatedAt = date('Y-m-d H:i:s');
+
+    $stmt = $conn->prepare("
+        UPDATE sales_records SET
+            cust_id = ?, prod_id = ?, prod_uniq_no = ?, bill_no = ?, bill_date = ?, warnt_period = ?, salesperson_id = ?, sale_note = ?, updated_by = ?, updated_at = ?
+        WHERE id = ?
+    ");
+
+    // Bind parameters
+    $stmt->bind_param("ssssssssssi", 
+        $cust_id, $prod_id, $prod_uniq_no, $bill_no, $bill_date, $warnt_period, $salesperson_id, $sale_note, $updated_by, $updatedAt, $id
+    );
+
+    // Execute query
+    $stmt->execute();
+
+    // Check result
+    if ($stmt->affected_rows) {
+        return ["message" => "Sales Record updated successfully"];
+    } else {
+        return ["error" => "Failed to update Sales Record or no changes made"];
+    }
+}
 
 function deleteSalesRecord($data, $crntUsr)
 {
-    global $pdo;
+global $conn;
+$id = $data['id'] ?? null;
 
-    $id = $data['id'] ?? null;
+if (!$id) {
+    return ["error" => "Sales Record ID is required"];
+}
 
-    if (!$id) {
-        return ["error" => "Sales record ID is required"];
-    }
+$stmt = $conn->prepare("UPDATE sales_records SET is_deleted = ?, updated_by = ?, updated_at = ? WHERE id = ?");
 
-    $stmt = $pdo->prepare("DELETE FROM sales_records WHERE id = ?");
+$isDeleted = 1;
+$updatedAt = date('Y-m-d H:i:s');
+$stmt->bind_param("issi", $isDeleted, $crntUsr, $updatedAt, $id);
 
-    try {
-        $stmt->execute([$id]);
-    } catch (PDOException $e) {
-        return ["error" => $e->getMessage()];
-    }
+$stmt->execute();
 
-    if ($stmt->rowCount() > 0) {
-        return ["message" => "Sales record deleted successfully"];
-    } else {
-        $errorInfo = $stmt->errorInfo();
-        return ["error" => "Failed to delete sales record: " . $errorInfo[2]];
-    }
+if ($stmt->affected_rows) {
+    return ["message" => "Sales Record deleted successfully"];
+} else {
+    return ["error" => "Failed to delete Sales Record or Sales Record not found"];
+}
 }
 
 function getListOfAllSalesRecords($crntUsr)
 {
     global $pdo;
+
     try {
         $adminId = $crntUsr;
-        $query = "SELECT * FROM usr_details WHERE id = '$adminId'";
-        $stmt = $pdo->query($query);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($result) {
-            $adminRole = $result['usr_role'];
-            $adminArea = $result['area']; 
+        $adminQuery = "SELECT * FROM usr_details WHERE id = :adminId";
+        $adminStmt = $pdo->prepare($adminQuery);
+        $adminStmt->execute(['adminId' => $adminId]);
+        $adminRow = $adminStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($adminRow) {
+            $adminRole = $adminRow['usr_role'];
+            $adminArea = $adminRow['area']; 
 
             $filterQuery = '';
 
@@ -259,42 +179,27 @@ function getListOfAllSalesRecords($crntUsr)
             } elseif ($adminRole == 'GeneralManager') {
                 $filterQuery = '';
             } elseif ($adminRole == 'RegionAdmin') {
-                $branchAdminsQuery = "SELECT id FROM usr_details WHERE area = '$adminArea' AND role = 'BranchAdmin'";
-                $branchAdminsStmt = $pdo->query($branchAdminsQuery);
-                $branchAdminIds = array_column($branchAdminsStmt->fetchAll(PDO::FETCH_ASSOC), 'id');
-
-                $salesPersonsQuery = "SELECT id FROM usr_details WHERE branch IN (SELECT branch FROM usr_details WHERE area = '$adminArea' AND role = 'BranchAdmin') AND role = 'SalesPerson'";
-                $salesPersonsStmt = $pdo->query($salesPersonsQuery);
-                $salesPersonIds = array_column($salesPersonsStmt->fetchAll(PDO::FETCH_ASSOC), 'id');
-
-                $allIds = array_merge($branchAdminIds, $salesPersonIds);
-                $allIdsString = implode(',', array_map('intval', $allIds));
-
-                if (!empty($allIdsString)) {
-                    $filterQuery = "WHERE sales_person_id IN ($allIdsString)";
-                } else {
-                    error_log("No valid BranchAdmin or SalesPerson IDs found for RegionAdmin area: $adminArea");
-                    $filterQuery = "WHERE 1=0"; 
-                }
+                // ...
+                $filterQuery = "WHERE salesperson_id IN ($allIdsString)";
             } elseif ($adminRole == 'BranchAdmin') {
-                $adminBranch = $result['branch']; 
-                $filterQuery = "WHERE sales_person_id IN (SELECT id FROM usr_details WHERE branch = '$adminBranch')";
+                $filterQuery = "WHERE salesperson_id IN (SELECT id FROM usr_details WHERE branch = '$adminBranch')";
             } elseif ($adminRole == 'SalesPerson') {
-                $filterQuery = "WHERE sales_person_id = '$adminId'";
+                $filterQuery = "WHERE salesperson_id = '$adminId'";
+            } else {
+                $filterQuery = "WHERE salesperson_id = '$adminId'";
             }
 
-            $query = "SELECT 
-                sales_records.*, 
-                products.p_name AS product_name 
-              FROM 
-                sales_records 
-              LEFT JOIN 
-                products 
-              ON 
-                sales_records.prod_id = products.id 
-              $filterQuery";
+            $query = "
+                SELECT 
+                    *
+                FROM 
+                    sales_records
+                $filterQuery
+            ";
 
-            $stmt = $pdo->query($query);
+            $stmt = $pdo->prepare($query);
+            $stmt->execute();
+
             $salesRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             return [
@@ -303,8 +208,7 @@ function getListOfAllSalesRecords($crntUsr)
             ];
         } else {
             return [
-                'error' => true,
-                'message' => 'Invalid admin ID.'
+                'error' => "Invalid admin ID.",
             ];
         }
     } catch (PDOException $e) {
@@ -317,24 +221,25 @@ function getListOfAllSalesRecords($crntUsr)
 
 function getASalesRecord($data)
 {
-    global $pdo;
+global $conn;
+$id = $data['id'] ?? null;
 
-    $id = $data['id'] ?? null;
-
-    if (!$id) {
-        return ["error" => "Sales record ID is required"];
-    }
-
-    $stmt = $pdo->prepare("SELECT * FROM sales_records WHERE id = ?");
-    $stmt->execute([$id]);
-
-    $salesRecord = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($salesRecord) {
-        return $salesRecord;
-    } else {
-        return ["error" => "Sales record not found"];
-    }
+if (!$id) {
+    return ["error" => "Sales Record ID is required"];
 }
 
+$stmt = $conn->prepare("SELECT * FROM sales_records WHERE id = ? AND is_deleted = ?");
+$stmt->bind_param("ii", $id, $isDeleted);
+$isDeleted = 0;
+$stmt->execute();
+
+$result = $stmt->get_result();
+$salesRecord = $result->fetch_assoc();
+
+if ($salesRecord) {
+    return $salesRecord;
+} else {
+    return ["error" => "Sales Record not found"];
+}
+}
 ?>

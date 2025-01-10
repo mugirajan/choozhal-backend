@@ -24,9 +24,11 @@ if ($data && isset($data['email']) && isset($data['password'])) {
             'admin_id' => $row['id'],
             'first_name' => $row['usr_fname'],
             'role' => $row['usr_role'],
+            'email' => $row['usr_email'],
             'branch' => $row['branch'],
             'area' => $row['area'],
             'address' => $row['address'],
+            'region' => $row['region'],
             'phone' => $row['usr_phone']
         );
         echo json_encode($response);
