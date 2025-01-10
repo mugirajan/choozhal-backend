@@ -57,38 +57,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 
-function moveFile() {
+function moveFile()
+{
     $targetDir = "../../uploads/profile-pic/";
-  
+
     if (!file_exists($targetDir)) {
-      mkdir($targetDir, 0777, true);
+        mkdir($targetDir, 0777, true);
     }
-  
+
     if ($_FILES['file']['error'] === UPLOAD_ERR_OK) {
-      $originalName = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
-      $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-  
-      $uniqueName = $originalName . '_' . uniqid() . '.' . $extension;
-      $targetFilePath = $targetDir . $uniqueName;
-  
-      if (move_uploaded_file($_FILES['file']['tmp_name'], $targetFilePath)) {
-        return [
-          'status' => 'success',
-          'filePath' => '/uploads/profile-pic/' . $uniqueName
-        ];
-      } else {
-        return [
-          'status' => 'error',
-          'message' => "Failed to move the uploaded file."
-        ];
-      }
+        $originalName = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
+        $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+
+        $uniqueName = $originalName . '_' . uniqid() . '.' . $extension;
+        $targetFilePath = $targetDir . $uniqueName;
+
+        if (move_uploaded_file($_FILES['file']['tmp_name'], $targetFilePath)) {
+            return [
+                'status' => 'success',
+                'filePath' => '/uploads/profile-pic/' . $uniqueName
+            ];
+        } else {
+            return [
+                'status' => 'error',
+                'message' => "Failed to move the uploaded file."
+            ];
+        }
     } else {
-      return [
-        'status' => 'error',
-        'message' => "File upload error: " . $_FILES['file']['error']
-      ];
+        return [
+            'status' => 'error',
+            'message' => "File upload error: " . $_FILES['file']['error']
+        ];
     }
-  }
+}
 
 function createCustomerDetails($data, $crntUsr, $file)
 {
@@ -273,7 +274,7 @@ function getListOfAllCustomers($crntUsr)
 
         if ($adminRow) {
             $adminRole = $adminRow['usr_role'];
-            $adminArea = $adminRow['area']; 
+            $adminArea = $adminRow['area'];
 
             $filterQuery = '';
 
@@ -283,11 +284,11 @@ function getListOfAllCustomers($crntUsr)
                 $filterQuery = '';
             } elseif ($adminRole == 'GeneralManager') {
                 $filterQuery = '';
-            } if ($adminRole == 'RegionAdmin') {
-                // ...
-                $filterQuery = "WHERE sr.salesperson_id IN ($allIdsString)";
+            }
+            if ($adminRole == 'RegionAdmin') {
+                $filterQuery = '';
             } elseif ($adminRole == 'BranchAdmin') {
-                $filterQuery = "WHERE sr.salesperson_id IN (SELECT id FROM usr_details WHERE branch = '$adminBranch')";
+                $filterQuery = '';
             } elseif ($adminRole == 'SalesPerson') {
                 $filterQuery = "WHERE sr.salesperson_id = '$adminId'";
             } else {

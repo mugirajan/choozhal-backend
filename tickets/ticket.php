@@ -5,16 +5,16 @@ require_once "../connect/db.php";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $payload = json_decode(file_get_contents('php://input'), true);
 
-error_log('Received payload: ' . json_encode($payload));
+    error_log('Received payload: ' . json_encode($payload));
 
-if (!isset($payload['target'], $payload['data'], $payload['crntUsr'])) {
-    error_log('Missing required properties in payload');
-    echo json_encode([
-        "success" => false,
-        "error" => "Invalid request. Missing 'target', 'data', or 'crntUsr' in payload."
-    ]);
-    exit;
-}
+    if (!isset($payload['target'], $payload['data'], $payload['crntUsr'])) {
+        error_log('Missing required properties in payload');
+        echo json_encode([
+            "success" => false,
+            "error" => "Invalid request. Missing 'target', 'data', or 'crntUsr' in payload."
+        ]);
+        exit;
+    }
 
     $method = $payload['target'];
     $getData = $payload['data'];
@@ -172,7 +172,7 @@ function getListOfAllTickets($crntUsr)
 
         $adminQuery = "SELECT * FROM usr_details WHERE id = '$adminId'";
         $adminResult = $pdo->query($adminQuery);
-        
+
         $adminRow = $adminResult->fetch(PDO::FETCH_ASSOC);
 
         if ($adminRow) {
@@ -182,6 +182,29 @@ function getListOfAllTickets($crntUsr)
 
             $filterQuery = '';
 
+            switch($adminRole) {
+                case 'SuperAdmin':
+                    $filterQuery = '';
+                    break;
+                case 'HeadOffice':
+                    $filterQuery = '';
+                    break;
+                case 'GeneralManager':
+                    $filterQuery = '';
+                    break;
+                case 'RegionAdmin':
+                    $filterQuery = '';
+                    break;
+                case 'BranchAdmin':
+                    $filterQuery = '';
+                    break;
+                case 'SalesPerson':
+                    $filterQuery = "WHERE td.salesperson_id = '$adminId'";
+                    break;
+                default:
+                    $filterQuery = '';
+                    break;
+            }
             if ($adminRole == 'SuperAdmin') {
                 $filterQuery = '';
             } elseif ($adminRole == 'HeadOffice') {
@@ -308,8 +331,8 @@ function getTicketChatMessages($data)
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':ticketId', $ticketId);
         $stmt->execute();
-        
-        
+
+
         $chatMessages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($chatMessages)) {
@@ -345,8 +368,12 @@ function createTicketChatMessage($data, $crntUsr)
         ) VALUES (?, ?, 0, ?, ?, 1)
     ");
 
-    $stmt->bind_param("isii", 
-        $ticketId, $message, $crntUsr, $crntUsr
+    $stmt->bind_param(
+        "isii",
+        $ticketId,
+        $message,
+        $crntUsr,
+        $crntUsr
     );
 
     $stmt->execute();
@@ -357,5 +384,3 @@ function createTicketChatMessage($data, $crntUsr)
         return ["error" => "Failed to create chat message"];
     }
 }
-
-?>
