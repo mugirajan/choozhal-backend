@@ -104,7 +104,7 @@ function getListOfAllUsers($adminId)
 
         // Fetch users details
         $query = "
-            SELECT * FROM usr_details $filterQuery  is_deleted = 0";
+            SELECT * FROM usr_details $filterQuery";
 
         error_log("Final users query: $query");
         $stmt = $conn->prepare($query);
