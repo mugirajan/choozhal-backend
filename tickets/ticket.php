@@ -587,16 +587,16 @@ function getListOfCurrentUserAllTickets($crntUsr, $adminRole)
                 $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "SuperAdmin" AND m.m_name = :management';
                 break;
             case 'HeadOffice':
-                $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "HeadOffice" AND ch.c_name = :cho';
+                $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "HeadOffice" AND ch.c_name = :cho ';
                 break;
             // case 'GeneralManager':
             //     $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "GeneralManager"';
             //     break;
             case 'RegionAdmin':
-                $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "RegionAdmin" AND r.r_name = :region';
+                $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "RegionAdmin" AND r.r_name = :region ';
                 break;
             case 'BranchAdmin':
-                $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "BranchAdmin" AND b.b_name = :branch';
+                $filterQuery = ' AND td.is_escalated = 1 AND td.escalated_to = "BranchAdmin" AND b.b_name = :branch ';
                 break;
             case 'SalesPerson':
                 $filterQuery = " AND td.assigned_to = :currentUserId";
